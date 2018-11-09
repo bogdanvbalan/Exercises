@@ -21,14 +21,15 @@ int main (){
     mqd_t mqclient, mqserver;   // queue descriptor
     message msgsnt; // the message that will be sent
     msgsnt.name = getpid();
+    char server_response[128];
 
-    sprintf (client_name, "/%d ", getpid());
+    sprintf (client_name, "/%d", getpid());
 
     struct mq_attr attr;
 
     attr.mq_flags = 0;
     attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = sizeof(msgsnt);
+    attr.mq_msgsize = sizeof(server_response);
     attr.mq_curmsgs = 0;
 
     if ((mqclient = mq_open (client_name, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {  // Create a queue on which the server can send the response
@@ -47,4 +48,9 @@ int main (){
         perror("Client not able to send message to server.\n");
         exit(1);
     }
+    if (mq_receive (mqclient, (char *)server_response,sizeof(server_response), NULL) == -1) {  // Read the response from server
+            perror ("Client: mq_receive");
+            exit (1);
+    }
+    printf("Server response: %s\n",server_response);
   }
