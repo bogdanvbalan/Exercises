@@ -1,32 +1,33 @@
-#include <stdio.h> 
+#include <stdio.h>
 #include <stdlib.h>
-#include <sys/ipc.h> 
-#include <sys/msg.h> 
 #include <string.h>
 #include <sys/types.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <mqueue.h>
 
-#define MAX_SEATS 200
+#define SERVER_NAME   "/server"
+#define QUEUE_PERMISSIONS 0660
+#define MAX_MESSAGES 10
+#define MAX_MSG_SIZE 256
+#define MAX_NO_OF_SEATS 200
 
-struct mesg_buffer {
-    long msg_type; 
-    int messid; 
-    int seat_number; 
-} message; 
-  
-int main() 
-{ 
-    key_t key = 1234; // The key used to identify the server
-    int msgflg = IPC_CREAT | 0666;
-    int msgid; 
-  
-    if((msgid = msgget(key,msgflg)) < 0){
-    	perror("msgget");
-    	exit(1);
+int main (){
+    mqd_t mqserver;   // Queue descriptor
+    int next_seat = 1; // The number of the next seat that will be given to the client
+
+    struct mq_attr attr;
+
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = MAX_MESSAGES;
+    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_curmsgs = 0;
+
+    if ((mqserver = mq_open (SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
+        perror ("Server mq_open");
+        exit (1);
     }
-    else {
-    	printf("The message queue was created on server side.\n");
+    else{
+        printf("Server has created the queue.\n");
     }
-  
-
-    return 0; 
-} 
+}
