@@ -10,6 +10,7 @@
 #define QUEUE_PERMISSIONS 0660
 #define MAX_MESSAGES 10
 #define MAX_NO_OF_SEATS 200
+#define MAX_MSG_SIZE 256
 
 typedef struct msg{
     int name;
@@ -29,7 +30,7 @@ int main (){
 
     attr.mq_flags = 0;
     attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = 256;
+    attr.mq_msgsize = MAX_MSG_SIZE;
     attr.mq_curmsgs = 0;
 
     if ((mqserver = mq_open (SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) { // Create the message queue on which the clients send the request
@@ -38,7 +39,7 @@ int main (){
     }
 
     while(MAX_NO_OF_SEATS-seats_taken){
-        if (mq_receive (mqserver,(char *) &msgrcv,(int) msg_in, NULL) == -1) {  // Get the seat reservation from the client
+        if (mq_receive (mqserver,(char *) &msgrcv, MAX_MSG_SIZE, NULL) == -1) {  // Get the seat reservation from the client
             perror ("Server: mq_receive");
             exit (1);
         }
