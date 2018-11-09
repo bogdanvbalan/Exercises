@@ -53,4 +53,14 @@ int main (){
             exit (1);
     }
     printf("Server response: %s\n",server_response);
+
+    if (mq_close(mqclient) == -1){
+        perror("Client mq_close");
+        exit(1);
+    }
+
+    if(mq_unlink(client_name) == -1){
+        perror("Client mq_unlink");
+        exit(1);
+    }
   }

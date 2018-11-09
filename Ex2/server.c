@@ -67,4 +67,13 @@ int main (){
     }
 
     printf("All seats are reserved.\n");
+
+    if(mq_close(mqserver) == -1){
+        perror("Server mq_close");
+        exit(1);
+    }
+    if(mq_unlink(SERVER_NAME) == -1){
+        perror("Server mp_unlink");
+        exit(1);
+    }
 }
