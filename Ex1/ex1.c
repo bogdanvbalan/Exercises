@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define NUM_THREADS 10   // The number of threads that are created
+#define NUM_THREADS 5   // The number of threads that are created
 #define MAX_CALLS 10 	   // The maximum number of calls to a function of linked_list performed by each thread
 
 pthread_barrier_t barrier; // The barrier used to sync all threads

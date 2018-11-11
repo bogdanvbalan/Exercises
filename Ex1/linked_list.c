@@ -93,27 +93,6 @@ void delete(int val){
 	}
 }
 
-/*Functions used to sort the list.*/
-void sort(){
-	node* i;
-	node* j;
-	int temp;
-
-	if(head==NULL){
-		return;                       //Check for empty list
-	}
-
-	for(i=head;i->next!=NULL;i=i->next){
-		for(j=i->next;j!=NULL;j=j->next){
-			if(i->val > j->val){
-				temp = i->val;
-				i->val = j->val;
-				j->val = temp;
-			}
-		}
-	}
-}
-
 /*Function used to delete the last entry in the list*/
 void pop(){
 	node* current = head;
@@ -140,4 +119,89 @@ void flush(){
 		pop();
 	}
 	free(head);
+}
+
+void printcustom(node* fi){
+	node* current = fi;
+	if(current == NULL){
+		printf("The list has no items.\n");
+	}
+	else{
+		while(current!=NULL){
+			current->print_list(current);
+			current = current->next;
+		}
+	}
+}
+
+void split(node* first_item, node** first_part, node** second_part){
+	node* slow;
+	node* fast;
+
+	if(first_item == NULL || head->next ==NULL){
+		*first_part = first_item;
+		*second_part = NULL;
+	}
+	else{
+		
+		slow = first_item;
+		fast = first_item->next;
+
+		while(fast!=NULL){
+			fast = fast->next;
+			if(fast != NULL){
+
+				slow = slow->next;
+				fast = fast->next;
+			}
+		}
+	*first_part = first_item;
+	*second_part = slow->next;
+	slow->next = NULL;
+	}
+}
+
+node* mergeLists(node* first_part,node* second_part){
+	
+	node* mergedList = NULL;
+
+	if(first_part == NULL){
+		return second_part;
+	}
+	else if(second_part == NULL){
+		return first_part;
+	}
+	if(first_part->val <= second_part->val){
+		mergedList = first_part;
+		mergedList->next = mergeLists(first_part->next,second_part);
+	}
+	else{
+		mergedList = second_part;
+		mergedList->next = mergeLists(first_part,second_part->next);
+	}
+
+	return mergedList;
+}
+
+void mergeSort(node** first_item){
+
+	node* head_ref = *first_item;
+	node* first_part = NULL;
+	node* second_part  = NULL;
+
+	if(head_ref == NULL || head_ref->next == NULL){
+
+		return;
+	}
+
+	split(head_ref,&first_part,&second_part);
+
+	mergeSort(&first_part);
+	mergeSort(&second_part);
+
+	*first_item = mergeLists(first_part,second_part);
+}
+
+void sort(){
+	mergeSort(&head);
 }
