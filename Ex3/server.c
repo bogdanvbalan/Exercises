@@ -7,7 +7,7 @@
 
 int main() {
 
-	int server_fd; // socket file descriptor for server
+	int server_fd, new_socket; // socket descriptors for server
 	struct sockaddr_in address; // address used on the socket
 	size_t address_len = sizeof(address);
 
@@ -24,6 +24,16 @@ int main() {
 		perror("Server: bind socket to add");
 		exit(EXIT_FAILURE);
 
+	}
+
+	if (listen (server_fd, 5) < 0) {
+		perror("Server: set the socket to listen mode.");
+		exit(EXIT_FAILURE);
+	}
+
+	if ((new_socket = accept(server_fd, (struct  sockaddr *) &address, (socklen_t *) &address_len)) < 0) {
+		perror("Server: accept");
+		exit(EXIT_FAILURE);
 	}
 	return 0;
 }
