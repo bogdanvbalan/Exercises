@@ -10,7 +10,6 @@
 #define QUEUE_PERMISSIONS 0660
 #define MAX_MESSAGES 10
 #define MAX_NO_OF_SEATS 200
-#define MAX_MSG_SIZE 256
 
 typedef struct msg {
     int name;
@@ -20,17 +19,20 @@ typedef struct msg {
 int main () {
     mqd_t mqserver,mqclient;   // Queue descriptor
     int seats_taken = 0; // The number of the next seat that will be given to the client
+
     message msgrcv; //Used to store the message received from client
-    char* msg_in[sizeof(msgrcv)];  // Size of message to be received
-    char server_response[128];
+    size_t size_client_message = sizeof(msgrcv);
+
     char client_name[64];
+
+    char server_response[128];  // used to store the message sent to client
     size_t size_server_response = sizeof(server_response);
 
-    struct mq_attr attr;
+    struct mq_attr attr;   // struct used to set the arguments for mq_open
 
     attr.mq_flags = 0;
     attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = MAX_MSG_SIZE;
+    attr.mq_msgsize = size_client_message;
     attr.mq_curmsgs = 0;
 
     if ((mqserver = mq_open (SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) { // Create the message queue on which the clients send the request
@@ -39,7 +41,7 @@ int main () {
     }
 
     while (MAX_NO_OF_SEATS - seats_taken) {
-        if (mq_receive (mqserver,(char *) &msgrcv, MAX_MSG_SIZE, NULL) == -1) {  // Get the seat reservation from the client
+        if (mq_receive (mqserver,(char *) &msgrcv, size_client_message, NULL) == -1) {  // Get the seat reservation from the client
             perror("Server: mq_receive");
             exit(1);
         }
@@ -61,7 +63,7 @@ int main () {
         if ((mqclient = mq_open(client_name, O_WRONLY)) == -1) {  // Open the client queue to send the response
             perror("Server mq_open on client");
         }
-        if (mq_send(mqclient,(char *) &server_response, sizeof(server_response), 0) == -1) {
+        if (mq_send(mqclient,(char *) &server_response, size_server_response, 0) == -1) {
             perror("Server is not able to send message to client.\n");
             exit(1);
         }
