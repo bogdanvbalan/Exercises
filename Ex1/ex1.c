@@ -69,21 +69,30 @@ void add_to_result(int val) {
 	result_length++;
 }
 void remove_from_result(int val) {
-   int i, j; 
+   /*int i, j; 
    for (i = 0; i < result_length; i++) 
       if (result_check[i] == val) 
-         break; 
-   if (i < result_length) { 
-     result_length--;
-     for (j = i; j < result_length; j++) 
-        result_check[j] = result_check[j+1]; 
-   } 
+        break; 
+   	if (i < result_length) {	 
+        result_length--;
+    	for (j = i; j < result_length; j++) 
+        	result_check[j] = result_check[j+1]; 
+   	} */
+   	int i, j;
+   	for (i = 0; i < result_length; i++) {
+   		if (result_check[i] == val) {
+   			for (j = i - 1; j < result_length - 1; j++) {
+   				result_check[j] = result_check[j+1];
+   			}
+   			result_length--;
+   			result_index--;
+   		}
+   	}
 }
-
 void sort_vector(){
 	int j, k, temp;
 	for (j = 0; j < result_index-1; j++) {
-		for (k = j; k < result_index; k++) {
+		for (k = j + 1; k < result_index; k++) {
 			if (result_check[j] > result_check[k]) {
 				temp = result_check[j];
 				result_check[j] = result_check[k];
@@ -124,5 +133,9 @@ int main() {
 	for (j = 0; j < result_length; j++) {
 		printf("%d\n", result_check[j]);
 	}
+
+	printf("result_length: %d\n",result_length);
+	printf("result_index: %d\n",result_index);
+
 	return 0;
 }
