@@ -11,8 +11,8 @@ pthread_barrier_t barrier; // The barrier used to sync all threads
 pthread_mutex_t mutex;     // Mutex used to protect the head of the list
 
 int result_check[2000]; //A vector used to check the results
-int result_index = 0;   //The index of the result vector
-int result_length = 0;
+int result_length = 0;  //Length of the test vector
+
 void add_to_result(int val);
 void remove_from_result(int val);
 void sort_vector();
@@ -64,20 +64,10 @@ void* thread_routine(void* data) {
 
 /*Functions used to manage the result vector*/
 void add_to_result(int val) {
-	result_check[result_index] = val;
-	result_index++;
+	result_check[result_length] = val;
 	result_length++;
 }
 void remove_from_result(int val) {
-   /*int i, j; 
-   for (i = 0; i < result_length; i++) 
-      if (result_check[i] == val) 
-        break; 
-   	if (i < result_length) {	 
-        result_length--;
-    	for (j = i; j < result_length; j++) 
-        	result_check[j] = result_check[j+1]; 
-   	} */
    	int i, j;
    	for (i = 0; i < result_length; i++) {
    		if (result_check[i] == val) {
@@ -85,14 +75,13 @@ void remove_from_result(int val) {
    				result_check[j] = result_check[j+1];
    			}
    			result_length--;
-   			result_index--;
    		}
    	}
 }
 void sort_vector(){
 	int j, k, temp;
-	for (j = 0; j < result_index-1; j++) {
-		for (k = j + 1; k < result_index; k++) {
+	for (j = 0; j < result_length-1; j++) {
+		for (k = j + 1; k < result_length; k++) {
 			if (result_check[j] > result_check[k]) {
 				temp = result_check[j];
 				result_check[j] = result_check[k];
@@ -133,9 +122,6 @@ int main() {
 	for (j = 0; j < result_length; j++) {
 		printf("%d\n", result_check[j]);
 	}
-
-	printf("result_length: %d\n",result_length);
-	printf("result_index: %d\n",result_index);
-
+	
 	return 0;
 }
