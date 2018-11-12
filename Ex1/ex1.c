@@ -23,7 +23,7 @@ void* thread_routine(void* data) {
 
 	rc = pthread_barrier_wait(&barrier);
 
-	if(rc == PTHREAD_BARRIER_SERIAL_THREAD){
+	if (rc == PTHREAD_BARRIER_SERIAL_THREAD) {
 		printf("All threads are ready.\n");
 	}
 
@@ -52,7 +52,7 @@ void* thread_routine(void* data) {
 			printf("Thread %d executes print()\n", thd_id);
 			print();
 		}
-		else{
+		else {
 			printf("Thread %d executes add(%d)\n", thd_id,parameter);
 			add(parameter);
 			add_to_result(parameter);  //test function
@@ -73,8 +73,7 @@ void remove_from_result(int val) {
    for (i = 0; i < result_length; i++) 
       if (result_check[i] == val) 
          break; 
-   if (i < result_length) 
-   { 
+   if (i < result_length) { 
      result_length--;
      for (j = i; j < result_length; j++) 
         result_check[j] = result_check[j+1]; 
@@ -83,9 +82,9 @@ void remove_from_result(int val) {
 
 void sort_vector(){
 	int j, k, temp;
-	for(j = 0; j < result_index-1; j++) {
-		for(k = j; k < result_index; k++) {
-			if(result_check[j] > result_check[k]) {
+	for (j = 0; j < result_index-1; j++) {
+		for (k = j; k < result_index; k++) {
+			if (result_check[j] > result_check[k]) {
 				temp = result_check[j];
 				result_check[j] = result_check[k];
 				result_check[k] = temp;
@@ -105,12 +104,12 @@ int main() {
 	pthread_barrier_init(&barrier, NULL, NUM_THREADS);
 	pthread_mutex_init(&mutex, NULL);
 
-	for(i = 0;i < NUM_THREADS; i++) {
+	for (i = 0;i < NUM_THREADS; i++) {
 		th_id[i] = i;
 		pthread_create(&tids[i], NULL, thread_routine, &(th_id[i]));
 	}
 
-	for(i = 0;i < NUM_THREADS; i++) {
+	for (i = 0;i < NUM_THREADS; i++) {
 		pthread_join(tids[i], NULL);
 	}
 
@@ -122,7 +121,7 @@ int main() {
 	flush();
 	
 	printf("The result vector.\n");
-	for(j = 0; j < result_length; j++) {
+	for (j = 0; j < result_length; j++) {
 		printf("%d\n", result_check[j]);
 	}
 	return 0;
