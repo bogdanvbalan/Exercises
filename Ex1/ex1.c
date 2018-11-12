@@ -18,7 +18,7 @@ void remove_from_result(int val);
 void sort_vector();
 	
 void* thread_routine(void* data) { 
-	int thd_id = *((int*)data);
+	int thd_id = *((int *)data);
 	int rc;
 
 	rc = pthread_barrier_wait(&barrier);
@@ -100,12 +100,14 @@ int main() {
 	sort();
 
 	pthread_t tids[NUM_THREADS];
+	int th_id[NUM_THREADS];
 
 	pthread_barrier_init(&barrier, NULL, NUM_THREADS);
 	pthread_mutex_init(&mutex, NULL);
 
 	for(i = 0;i < NUM_THREADS; i++) {
-		pthread_create(&tids[i], NULL, thread_routine, (void *)&i);
+		th_id[i] = i;
+		pthread_create(&tids[i], NULL, thread_routine, &(th_id[i]));
 	}
 
 	for(i = 0;i < NUM_THREADS; i++) {
