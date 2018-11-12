@@ -17,8 +17,8 @@ void add_to_result(int val);
 void remove_from_result(int val);
 void sort_vector();
 	
-void* thread_routine(void* data){
-	int thd_id = (int) data;
+void* thread_routine(void* data) { 
+	int thd_id = *((int*)data);
 	int rc;
 
 	rc = pthread_barrier_wait(&barrier);
@@ -30,25 +30,25 @@ void* thread_routine(void* data){
 	srand(time(NULL) * pthread_self());
 	int no_of_operations = rand() % MAX_CALLS + 1;
 
-	while(no_of_operations){
+	while (no_of_operations) {
 		int type_of_call = rand() % 6 + 1;   // The call to add() has more chances to appear
 		int parameter = rand() % 100 + 1;
 
-		if (type_of_call == 1){
+		if (type_of_call == 1) {
 			pthread_mutex_lock(&mutex);
 			printf("Thread %d executes sort()\n", thd_id);
 			sort();
 			sort_vector();                      // test function
 			pthread_mutex_unlock(&mutex);
 		}
-		else if(type_of_call == 2){
+		else if (type_of_call == 2) {
 			pthread_mutex_lock(&mutex);
 			printf("Thread %d executes delete(%d)\n", thd_id,parameter);
 			delete(parameter);
 			remove_from_result(parameter);   // test function
 			pthread_mutex_unlock(&mutex);
 		}
-		else if(type_of_call == 3){
+		else if (type_of_call == 3) {
 			printf("Thread %d executes print()\n", thd_id);
 			print();
 		}
@@ -63,29 +63,29 @@ void* thread_routine(void* data){
 }
 
 /*Functions used to manage the result vector*/
-void add_to_result(int val){
+void add_to_result(int val) {
 	result_check[result_index] = val;
 	result_index++;
 	result_length++;
 }
-void remove_from_result(int val){
-   int i,j; 
-   for (i=0; i<result_length; i++) 
+void remove_from_result(int val) {
+   int i, j; 
+   for (i = 0; i < result_length; i++) 
       if (result_check[i] == val) 
          break; 
    if (i < result_length) 
    { 
      result_length--;
-     for (j=i; j<result_length; j++) 
+     for (j = i; j < result_length; j++) 
         result_check[j] = result_check[j+1]; 
    } 
 }
 
 void sort_vector(){
-	int j,k,temp;
-	for(j=0;j<result_index-1;j++){
-		for(k=j;k<result_index;k++){
-			if(result_check[j] > result_check[k]){
+	int j, k, temp;
+	for(j = 0; j < result_index-1; j++) {
+		for(k = j; k < result_index; k++) {
+			if(result_check[j] > result_check[k]) {
 				temp = result_check[j];
 				result_check[j] = result_check[k];
 				result_check[k] = temp;
@@ -94,19 +94,22 @@ void sort_vector(){
 	}
 }
 
-int main(){
+int main() {
 	int i,j;
+
+	sort();
+
 	pthread_t tids[NUM_THREADS];
 
 	pthread_barrier_init(&barrier, NULL, NUM_THREADS);
-	pthread_mutex_init(&mutex,NULL);
+	pthread_mutex_init(&mutex, NULL);
 
-	for(i = 0;i < NUM_THREADS;i++){
-		pthread_create(&tids[i],NULL,thread_routine,(void *)i);
+	for(i = 0;i < NUM_THREADS; i++) {
+		pthread_create(&tids[i], NULL, thread_routine, (void *)&i);
 	}
 
-	for(i = 0;i < NUM_THREADS; i++){
-		pthread_join(tids[i],NULL);
+	for(i = 0;i < NUM_THREADS; i++) {
+		pthread_join(tids[i], NULL);
 	}
 
 	pthread_barrier_destroy(&barrier);
@@ -117,7 +120,7 @@ int main(){
 	flush();
 	
 	printf("The result vector.\n");
-	for(j=0;j<result_length;j++){
+	for(j = 0; j < result_length; j++) {
 		printf("%d\n", result_check[j]);
 	}
 	return 0;
