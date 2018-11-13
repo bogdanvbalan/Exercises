@@ -7,12 +7,36 @@
 
 #define PORT 20000
 
-int main() {
-	int client_sock;
+int main(int argc, char* argv[]) {
+	int client_sock, i, string_size;
 	struct sockaddr_in addr; // address for client socket
 	struct sockaddr_in serv_addr; //address for server socket
 
-	char* msg = "Hello";
+	char* msg; // the message that is sent to the server
+
+	if (argc == 1) {                                        // exit if there is no argument received
+		printf("No file name was sent as argument\n");  
+		exit(EXIT_FAILURE);
+	}
+	
+	//get the arguments as a single string
+	string_size = 0;
+	for (i = 1; i < argc; i++) {
+		string_size += strlen(argv[i]);
+		if (i + 1 < argc) {
+			string_size++;
+		}
+	}
+
+	msg = malloc(string_size);
+	msg[0] = '\0';
+
+	for (i = 1; i < argc; i++) {
+		strcat(msg, argv[i]);
+		if (i + 1 < argc) {
+			strcat(msg, " ");
+		}
+	}
 
 	if ((client_sock = socket(AF_INET, SOCK_STREAM,0)) < 0) {
 		perror("Client socket create");

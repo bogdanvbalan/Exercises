@@ -40,6 +40,6 @@ int main() {
 	}
 
 	valread = read(new_socket, buffer, 1024);
-	printf("Message received: %s", buffer);
+	printf("Message received: %s\n", buffer);
 	return 0;
 }
