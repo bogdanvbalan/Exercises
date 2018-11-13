@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	
-	//get the arguments as a single string
+	//determine the size of the string needed to store the arguments
 	string_size = 0;
 	for (i = 1; i < argc; i++) {
 		string_size += strlen(argv[i]);
@@ -31,6 +31,7 @@ int main(int argc, char* argv[]) {
 	msg = malloc(string_size);
 	msg[0] = '\0';
 
+	//store the arguments as a single string 
 	for (i = 1; i < argc; i++) {
 		strcat(msg, argv[i]);
 		if (i + 1 < argc) {
@@ -38,7 +39,7 @@ int main(int argc, char* argv[]) {
 		}
 	}
 
-	if ((client_sock = socket(AF_INET, SOCK_STREAM,0)) < 0) {
+	if ((client_sock = socket(AF_INET, SOCK_STREAM,0)) == -1) {
 		perror("Client socket create");
 		exit(EXIT_FAILURE);
 	}
@@ -48,12 +49,12 @@ int main(int argc, char* argv[]) {
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(PORT);
 
-	if (inet_pton (AF_INET, "127.0.0.1", &serv_addr.sin_addr) <=0){
+	if (inet_pton (AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
 		perror("Client add convert");
 		exit(EXIT_FAILURE);
 	}
 
-	if (connect(client_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) {
+	if (connect(client_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
 		perror("Client connection");
 		exit(EXIT_FAILURE);
 	}
