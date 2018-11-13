@@ -7,22 +7,29 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/sendfile.h>
 
 #define PORT 20000
-#define SOURCE_DIR "/home/bogdan/Desktop/Source"
+#define SOURCE_DIR "/home/bogdan/Desktop/Source/"
 
 
 
 //Function used to handle the reuquest for each client
 
 void handleRequest(int socket_des) {
-	int valread;
+	int valread, read_file;
 	char file_name[1024] = {0};  // name of the file requested by client
 	char srv_ok[1024] = "The file was found.";
 	char srv_nok[1024] = "The file was not found.";
 	char *source_dir = SOURCE_DIR;  // the path to source dir
 	DIR *dp = NULL;     // directory stream
 	struct dirent *dptr = NULL; // structure to get info on the directory 
+	struct stat file_stats; //the stats of the file that is open 
+	int file_size;
+	char size_ff[256];
+	char path[1024] = "../../..";
 
 	if((valread = read(socket_des, file_name, 1024)) == -1) {
 		perror("Server read request");
@@ -38,15 +45,30 @@ void handleRequest(int socket_des) {
 	}
 	else {
 		while ((dptr = readdir(dp)) != NULL) {     //get the entries in the directory
-			if(strcmp(dptr->d_name,file_name) == 0) {
-				send(socket_des, srv_ok, sizeof(srv_ok),0 );
+			if (strcmp(dptr->d_name,file_name) == 0) {
+				strcat(path,file_name);
+				chdir(source_dir);
+				if ((read_file = open(file_name, O_RDONLY)) == - 1) {    // open the file indicated by client
+					perror("Server open file");
+					exit(EXIT_FAILURE);
+				}
+				if ((fstat(read_file, &file_stats)) == -1) {   // get the stats of the file
+					perror("Server get file info");
+					exit(EXIT_FAILURE);
+				}
+
+				file_size = file_stats.st_size;
+				sprintf(size_ff, "%d",file_size);
+				strcat(srv_ok,size_ff);
+
+				send(socket_des, srv_ok, sizeof(srv_ok), 0);
+				
+				close(read_file);
 				exit(EXIT_SUCCESS);
 			}
 		}
 	}
- 	
 	send(socket_des, srv_nok, sizeof(srv_nok),0 );
-
 }
 
 int main() {
@@ -96,6 +118,5 @@ int main() {
 		}
 		
 	}
-
 	return 0;
 }
