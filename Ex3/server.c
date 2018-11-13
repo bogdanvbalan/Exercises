@@ -3,8 +3,13 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
 
 #define PORT 20000
+#define SOURCE_DIR "/home/bogdan/Desktop/Source"
 
 
 
@@ -12,10 +17,35 @@
 
 void handleRequest(int socket_des) {
 	int valread;
-	char buffer[1024] = {0};
+	char file_name[1024] = {0};  // name of the file requested by client
+	char srv_ok[1024] = "The file was found.";
+	char srv_nok[1024] = "The file was not found.";
+	char *source_dir = SOURCE_DIR;  // the path to source dir
+	DIR *dp = NULL;     // directory stream
+	struct dirent *dptr = NULL; // structure to get info on the directory 
 
-	valread = read(socket_des, buffer, 1024);
-	printf("Received a request for %s file.\n", buffer);
+	if((valread = read(socket_des, file_name, 1024)) == -1) {
+		perror("Server read request");
+		exit(EXIT_FAILURE);
+	}
+
+	printf("Received a request for %s file.\n", file_name);
+
+	// open the directory indicatead as source
+	if((dp = opendir(source_dir)) == NULL) {
+		perror("Server open dir");
+		exit(EXIT_FAILURE);
+	}
+	else {
+		while ((dptr = readdir(dp)) != NULL) {     //get the entries in the directory
+			if(strcmp(dptr->d_name,file_name) == 0) {
+				send(socket_des, srv_ok, sizeof(srv_ok),0 );
+				exit(EXIT_SUCCESS);
+			}
+		}
+	}
+ 	
+	send(socket_des, srv_nok, sizeof(srv_nok),0 );
 
 }
 
@@ -46,7 +76,7 @@ int main() {
 
 	while(1) {
 
-		if ((new_socket = accept(server_fd, NULL, NULL)) == - 1) {    //accept the connection to the client
+		if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t*) &address_len)) == - 1) {    //accept the connection to the client
 			perror("Server accept");
 			exit(EXIT_FAILURE);
 		}
@@ -58,8 +88,8 @@ int main() {
 				close(new_socket);
 				break;
 			case 0:
-				 handleRequest(new_socket);
-				 exit(EXIT_SUCCESS);
+				handleRequest(new_socket); 
+				exit(EXIT_SUCCESS);
 			default:
 				close(new_socket);
 				break;

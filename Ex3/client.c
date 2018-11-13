@@ -4,6 +4,8 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+
 
 #define PORT 20000
 
@@ -13,6 +15,7 @@ int main(int argc, char* argv[]) {
 	struct sockaddr_in serv_addr; //address for server socket
 
 	char* msg; // the message that is sent to the server
+	char srv[1024] = {0};
 
 	if (argc == 1) {                                        // exit if there is no argument received
 		printf("No file name was sent as argument\n");  
@@ -59,6 +62,9 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	send( client_sock, msg, strlen(msg), 0);
+	send(client_sock, msg, strlen(msg), 0);
+	read(client_sock, srv, 1024);
+
+	printf("Got response: %s\n", srv);
 
 }
