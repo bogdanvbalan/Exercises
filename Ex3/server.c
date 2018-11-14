@@ -16,20 +16,16 @@
 
 
 
-//Function used to handle the reuquest for each client
+//Function used to handle the request for each client
 
 void handleRequest(int socket_des) {
 	int valread, read_file;
+	int srv_rsp = -1;
 	char file_name[1024] = {0};  // name of the file requested by client
-	char srv_ok[1024] = "The file was found.";
-	char srv_nok[1024] = "The file was not found.";
 	char *source_dir = SOURCE_DIR;  // the path to source dir
 	DIR *dp = NULL;     // directory stream
 	struct dirent *dptr = NULL; // structure to get info on the directory 
 	struct stat file_stats; //the stats of the file that is open 
-	int file_size;
-	char size_ff[256];
-	char path[1024] = "../../..";
 
 	if((valread = read(socket_des, file_name, 1024)) == -1) {
 		perror("Server read request");
@@ -46,8 +42,7 @@ void handleRequest(int socket_des) {
 	else {
 		while ((dptr = readdir(dp)) != NULL) {     //get the entries in the directory
 			if (strcmp(dptr->d_name,file_name) == 0) {
-				strcat(path,file_name);
-				chdir(source_dir);
+				chdir(source_dir);                              // move to the source dir
 				if ((read_file = open(file_name, O_RDONLY)) == - 1) {    // open the file indicated by client
 					perror("Server open file");
 					exit(EXIT_FAILURE);
@@ -57,18 +52,22 @@ void handleRequest(int socket_des) {
 					exit(EXIT_FAILURE);
 				}
 
-				file_size = file_stats.st_size;
-				sprintf(size_ff, "%d",file_size);
-				strcat(srv_ok,size_ff);
-
-				send(socket_des, srv_ok, sizeof(srv_ok), 0);
+				srv_rsp = file_stats.st_size;                  //create the response
+				printf("Sending %d\n",srv_rsp);
 				
+				if(send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp), 0) == -1) {
+					perror("Server send file size");
+					exit(EXIT_FAILURE);
+				}
+				
+
 				close(read_file);
 				exit(EXIT_SUCCESS);
 			}
 		}
 	}
-	send(socket_des, srv_nok, sizeof(srv_nok),0 );
+	printf("Sending %d\n",srv_rsp);
+	send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp),0 );
 }
 
 int main() {

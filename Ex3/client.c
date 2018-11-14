@@ -14,8 +14,8 @@ int main(int argc, char* argv[]) {
 	struct sockaddr_in addr; // address for client socket
 	struct sockaddr_in serv_addr; //address for server socket
 
-	char* msg; // the message that is sent to the server
-	char srv[1024] = {0};
+	char *msg; // the message that is sent to the server
+	int size_of_file;
 
 	if (argc == 1) {                                        // exit if there is no argument received
 		printf("No file name was sent as argument\n");  
@@ -62,9 +62,21 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	send(client_sock, msg, strlen(msg), 0);
-	read(client_sock, srv, 1024);
+	if (send(client_sock, msg, strlen(msg), 0) == -1) {
+		perror("Client send");
+		exit(EXIT_FAILURE);
+	}
 
-	printf("Got response: %s\n", srv);
+	if (read(client_sock, (int *) &size_of_file, sizeof(size_of_file)) == -1) {
+		perror("Client receive file size");
+	    exit(EXIT_FAILURE);
+	}
+
+	if (size_of_file == -1) {
+		printf("The file was not found on server.\n");
+	}
+	else {
+		printf("The file was found and it has a size of %d bytes.\n", size_of_file);
+	}
 
 }
