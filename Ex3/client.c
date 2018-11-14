@@ -18,6 +18,7 @@ int main(int argc, char* argv[]) {
 	char msg[256]; // the message that is sent to the server
 	int size_of_file;
 	unsigned long available_space;
+	char file_on_server[23];
 
 	if (argc == 1) {                                        // exit if there is no argument received
 		printf("No file name was sent as argument\n");  
@@ -68,39 +69,48 @@ int main(int argc, char* argv[]) {
 			exit(EXIT_FAILURE);
 		}
 
-		if (read(client_sock, (int *) &size_of_file, sizeof(size_of_file)) == -1) {
-			perror("Client receive file size");
+		if (read(client_sock, &file_on_server, sizeof(file_on_server)) == -1) {
+			perror("Client receive file found");
 		    exit(EXIT_FAILURE);
 		}
 
-		if (size_of_file == -1) {
-			printf("The file was not found on server.\n");
-			exit(EXIT_FAILURE);
-		}
-		else {
-			if (statvfs(PATH, &stat) != 0) {    
-				perror("Client statvfs");
-				exit(EXIT_FAILURE);
+		if(strcmp(file_on_server,"The file was found.") == 0) {
+			printf("%s\n",file_on_server);
+
+			if (read(client_sock, (int *) &size_of_file, sizeof(size_of_file)) == -1) {
+				perror("Client receive file size");
+			    exit(EXIT_FAILURE);
 			}
 
-			available_space = stat.f_bsize * stat.f_bavail;
-
-			available_space = 1;
-
-			if (available_space >= (unsigned int) size_of_file) {
-				printf("Client has enough space to save the file.\n");
+			if (size_of_file < 0) {
+				printf("Wrong file size sent by server.\n");
 			}
 			else {
-				printf("Client doesn't have enough space to save the file.\n");
+				if (statvfs(PATH, &stat) != 0) {    
+					perror("Client statvfs");
+					exit(EXIT_FAILURE);
+				}
+
+				available_space = stat.f_bsize * stat.f_bavail;
+
+				available_space = 1;
+
+				if (available_space >= (unsigned int) size_of_file) {
+					printf("Client has enough space to save the file.\n");
+				}
+				else {
+					printf("Client doesn't have enough space to save the file.\n");
+				}
 			}
+			
+		}
+		else {
+			printf("%s\n",file_on_server);
 		}
 
+		close(client_sock);
 		printf("Enter the name of the next file or 'q' to exit.\n");
 		scanf("%s", msg);
-
-		printf("%s", msg);
-
-		close(client_sock);
 	}
 
 }

@@ -26,6 +26,8 @@ void handleRequest(int socket_des) {
 	DIR *dp = NULL;     // directory stream
 	struct dirent *dptr = NULL; // structure to get info on the directory 
 	struct stat file_stats; //the stats of the file that is open 
+	char file_found[23] = "The file was found.";
+	char file_not_found[23] = "The file was not found.";
 
 	if((valread = read(socket_des, file_name, 1024)) == -1) {
 		perror("Server read request");
@@ -42,6 +44,10 @@ void handleRequest(int socket_des) {
 	else {
 		while ((dptr = readdir(dp)) != NULL) {     //get the entries in the directory
 			if (strcmp(dptr->d_name,file_name) == 0) {
+				if(send(socket_des, &file_found, sizeof(file_found), 0) == -1) {
+					perror("Server send file size");
+					exit(EXIT_FAILURE);
+				}
 				chdir(source_dir);                              // move to the source dir
 				if ((read_file = open(file_name, O_RDONLY)) == - 1) {    // open the file indicated by client
 					perror("Server open file");
@@ -51,7 +57,6 @@ void handleRequest(int socket_des) {
 					perror("Server get file info");
 					exit(EXIT_FAILURE);
 				}
-
 				srv_rsp = file_stats.st_size;                  //create the response
 				printf("Sending %d\n",srv_rsp);
 
@@ -65,8 +70,8 @@ void handleRequest(int socket_des) {
 			}
 		}
 	}
-	printf("Sending %d\n",srv_rsp);
-	send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp),0 );
+
+	send(socket_des, &file_not_found, sizeof(file_not_found),0 );
 	close(socket_des);
 }
 
