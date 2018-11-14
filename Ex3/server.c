@@ -60,7 +60,6 @@ void handleRequest(int socket_des) {
 					exit(EXIT_FAILURE);
 				}
 				
-
 				close(read_file);
 				exit(EXIT_SUCCESS);
 			}
@@ -68,6 +67,7 @@ void handleRequest(int socket_des) {
 	}
 	printf("Sending %d\n",srv_rsp);
 	send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp),0 );
+	close(socket_des);
 }
 
 int main() {
