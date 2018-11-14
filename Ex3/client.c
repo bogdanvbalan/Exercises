@@ -5,17 +5,19 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
+#include <sys/statvfs.h>
 
 #define PORT 20000
+#define PATH "/home/bogdan/Desktop/Target/"
 
 int main(int argc, char* argv[]) {
 	int client_sock, i, string_size;
 	struct sockaddr_in addr; // address for client socket
-	struct sockaddr_in serv_addr; //address for server socket
-
+	struct sockaddr_in serv_addr; // address for server socket
+	struct statvfs stat; // used to get the available space
 	char *msg; // the message that is sent to the server
 	int size_of_file;
+	unsigned long available_space;
 
 	if (argc == 1) {                                        // exit if there is no argument received
 		printf("No file name was sent as argument\n");  
@@ -74,9 +76,24 @@ int main(int argc, char* argv[]) {
 
 	if (size_of_file == -1) {
 		printf("The file was not found on server.\n");
+		exit(EXIT_FAILURE);
 	}
 	else {
-		printf("The file was found and it has a size of %d bytes.\n", size_of_file);
+		if (statvfs(PATH, &stat) != 0) {    
+			perror("Client statvfs");
+			exit(EXIT_FAILURE);
+		}
+
+		available_space = stat.f_bsize * stat.f_bavail;
+
+		available_space = 1;
+
+		if (available_space >= (unsigned int) size_of_file) {
+			printf("Client has enough space to save the file.\n");
+		}
+		else {
+			printf("Client doesn't have enough space to save the file.\n");
+		}
 	}
 
 }

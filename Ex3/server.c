@@ -54,7 +54,7 @@ void handleRequest(int socket_des) {
 
 				srv_rsp = file_stats.st_size;                  //create the response
 				printf("Sending %d\n",srv_rsp);
-				
+
 				if(send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp), 0) == -1) {
 					perror("Server send file size");
 					exit(EXIT_FAILURE);
@@ -95,14 +95,14 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
-	while(1) {
+	while (1) {
 
 		if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t*) &address_len)) == - 1) {    //accept the connection to the client
 			perror("Server accept");
 			exit(EXIT_FAILURE);
 		}
 
-		switch(fork()) {
+		switch (fork()) {
 
 			case -1:
 				printf("Can't create child. \n");
