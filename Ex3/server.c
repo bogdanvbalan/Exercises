@@ -21,20 +21,23 @@
 void handleRequest(int socket_des) {
 	int valread, read_file;
 	int srv_rsp = -1;
-	char file_name[1024] = {0};  // name of the file requested by client
+	char msg_client[256];;  // name of the file requested by client
 	char *source_dir = SOURCE_DIR;  // the path to source dir
 	DIR *dp = NULL;     // directory stream
 	struct dirent *dptr = NULL; // structure to get info on the directory 
 	struct stat file_stats; //the stats of the file that is open 
 	char file_found[23] = "The file was found.";
 	char file_not_found[23] = "The file was not found.";
+	int data_left;
+	int bytes_sent = 0;
+	off_t file_offset = 0;
 
-	if((valread = read(socket_des, file_name, 1024)) == -1) {
+	if((valread = read(socket_des, &msg_client, sizeof(msg_client))) == -1) {
 		perror("Server read request");
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Received a request for %s file.\n", file_name);
+	printf("Received a request for %s file.\n", msg_client);
 
 	// open the directory indicatead as source
 	if((dp = opendir(source_dir)) == NULL) {
@@ -43,13 +46,13 @@ void handleRequest(int socket_des) {
 	}
 	else {
 		while ((dptr = readdir(dp)) != NULL) {     //get the entries in the directory
-			if (strcmp(dptr->d_name,file_name) == 0) {
+			if (strcmp(dptr->d_name,msg_client) == 0) {
 				if(send(socket_des, &file_found, sizeof(file_found), 0) == -1) {
 					perror("Server send file size");
 					exit(EXIT_FAILURE);
 				}
 				chdir(source_dir);                              // move to the source dir
-				if ((read_file = open(file_name, O_RDONLY)) == - 1) {    // open the file indicated by client
+				if ((read_file = open(msg_client, O_RDONLY)) == - 1) {    // open the file indicated by client
 					perror("Server open file");
 					exit(EXIT_FAILURE);
 				}
@@ -58,19 +61,35 @@ void handleRequest(int socket_des) {
 					exit(EXIT_FAILURE);
 				}
 				srv_rsp = file_stats.st_size;                  //create the response
-				printf("Sending %d\n",srv_rsp);
 
 				if(send(socket_des,(int *) &srv_rsp, sizeof(srv_rsp), 0) == -1) {
 					perror("Server send file size");
 					exit(EXIT_FAILURE);
 				}
-				
+				memset(msg_client,0,sizeof(msg_client));
+
+				if ((read(socket_des, &msg_client, sizeof(msg_client))) == -1) {
+					perror("Server read size response");
+					exit(EXIT_FAILURE);
+				}
+
+				if (strcmp(msg_client,"ok") == 0) {
+					data_left = file_stats.st_size;
+					printf("File transfer start.\n");
+					while (data_left > 0) {
+						if ((bytes_sent = sendfile(socket_des, read_file, &file_offset, BUFSIZ)) == -1) {
+							perror("Server send file");
+							exit(EXIT_FAILURE);
+						}
+						data_left -= bytes_sent;
+					}
+					printf("File sent to the client.\n");
+				}
 				close(read_file);
 				exit(EXIT_SUCCESS);
 			}
 		}
 	}
-
 	send(socket_des, &file_not_found, sizeof(file_not_found),0 );
 	close(socket_des);
 }

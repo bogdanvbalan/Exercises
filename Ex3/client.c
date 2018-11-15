@@ -6,6 +6,10 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/statvfs.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
 
 #define PORT 20000
 #define PATH "/home/bogdan/Desktop/Target/"
@@ -19,6 +23,12 @@ int main(int argc, char* argv[]) {
 	int size_of_file;
 	unsigned long available_space;
 	char file_on_server[23];
+	FILE *file_write;
+	char size_rsp[256];
+	int bytes_left;
+	int bytes_recv;
+	char file_buffer[BUFSIZ];
+
 
 	if (argc == 1) {                                        // exit if there is no argument received
 		printf("No file name was sent as argument\n");  
@@ -93,13 +103,38 @@ int main(int argc, char* argv[]) {
 
 				available_space = stat.f_bsize * stat.f_bavail;
 
-				available_space = 1;
-
 				if (available_space >= (unsigned int) size_of_file) {
 					printf("Client has enough space to save the file.\n");
+					memset(size_rsp,0,sizeof(size_rsp));
+					strcpy(size_rsp,"ok");
+					if (send(client_sock, size_rsp, strlen(size_rsp), 0) == -1) {
+						perror("Client send size rsp");
+						exit(EXIT_FAILURE);
+					}
+					chdir(PATH);
+
+					//file_write = fopen(msg,"w");
+					if((file_write = fopen(msg,"w")) == NULL) {
+						perror("Client create file");
+						exit(EXIT_FAILURE);
+					}
+					bytes_left = size_of_file;
+
+					while(((bytes_recv = recv(client_sock, file_buffer, BUFSIZ, 0 )) > 0) && (bytes_left > 0)) {
+						fwrite(file_buffer, sizeof(char), bytes_recv, file_write);
+						bytes_left -= bytes_recv;
+						printf("Client got %d bytes from server.\n",bytes_recv);
+					}
+					fclose(file_write);
 				}
 				else {
 					printf("Client doesn't have enough space to save the file.\n");
+					memset(size_rsp,0,sizeof(size_rsp));
+					strcpy(size_rsp,"exit");
+					if (send(client_sock, size_rsp, strlen(size_rsp), 0) == -1) {
+						perror("Client send size rsp");
+						exit(EXIT_FAILURE);
+					}
 				}
 			}
 			
@@ -107,10 +142,14 @@ int main(int argc, char* argv[]) {
 		else {
 			printf("%s\n",file_on_server);
 		}
-
 		close(client_sock);
 		printf("Enter the name of the next file or 'q' to exit.\n");
 		scanf("%s", msg);
+
+		if (strcmp(msg,"q") == 0) {
+			exit(EXIT_SUCCESS);
+		}
 	}
+	return 0;
 
 }
