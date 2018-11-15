@@ -57,7 +57,6 @@ void* thread_routine(void* data) {
 			add(parameter);
 			add_to_result(parameter);  //test function
 		}
-
 		no_of_operations--;
 	}
 }
@@ -93,8 +92,6 @@ void sort_vector(){
 
 int main() {
 	int i,j;
-
-	sort();
 
 	pthread_t tids[NUM_THREADS];
 	int th_id[NUM_THREADS];

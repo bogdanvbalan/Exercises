@@ -2,17 +2,20 @@
 #include <stdlib.h>
 #include "linked_list.h"
 
-/*Definition of the node struct*/
+
+struct node;
+typedef void (*print_ptr)(struct node*);
+
 typedef struct node {
   struct node * next;
   int val;
   print_ptr print_list;
 } node;
 
-void print_item(node* current); // The declaration is need so that it can be used in add function
+static void print_item(node* current); // The declaration is need so that it can be used in add function
 
 /* Initialization of the head node */
-node* head = NULL;
+static node* head = NULL;
 
 /*Function used to add an item to the list.
 The item will be added at the end of the list*/
@@ -51,7 +54,7 @@ void print() {
 }
 
 /* Function used to print individual items*/
-void print_item(node* current) {
+static void print_item(node* current) {
 	if (current != NULL) {
 		printf("%d\n",current->val);
 	}
@@ -94,7 +97,7 @@ void delete(int val) {
 }
 
 /*Function used to delete the last entry in the list*/
-void pop(){
+ void pop(){
 	node* current = head;
 	node* temp = NULL;
 
@@ -125,7 +128,7 @@ void flush(){
 /* Splits the current list into two lists. The first part will point to the initial head while the 
 second part will point to the mid element (if the list is long enough). If the number of elements 
 is odd the first list will have the extra item*/
-void split(node* first_item, node** first_part, node** second_part) {
+static void split(node* first_item, node** first_part, node** second_part) {
 	node* slow;
 	node* fast;
 
@@ -154,7 +157,7 @@ void split(node* first_item, node** first_part, node** second_part) {
 
 /* Returns a merged list based on the pointers received. This function does the actual sorting based on 
 the value of each item.*/
-node* mergeLists(node* first_part,node* second_part) {
+static node* mergeLists(node* first_part,node* second_part) {
 	
 	node* mergedList = NULL;
 
@@ -178,7 +181,7 @@ node* mergeLists(node* first_part,node* second_part) {
 
 /* Starts with the initial list and breaks it until it gets to a list with a single item.
 Calls the merging function to merge the items until the list is recreated.*/
-void mergeSort(node** first_item){
+static void mergeSort(node** first_item){
 
 	node* head_ref = *first_item;
 	node* first_part = NULL;
