@@ -11,16 +11,15 @@
 #include <fcntl.h>
 
 
-#define PORT 20000 // the port to which the client will connect                              
+#define PORT 20000                             
 #define PATH "/home/bogdan/Desktop/Target/" // the path to the directory where the files will be saved
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 #define SERVER_IP "127.0.0.1"
 
 int main(int argc, char* argv[]) {
-	
 	int i; // used to loop through the number of arguments
 	int client_sock; 
-	int size_of_file; 
+	unsigned long size_of_file; 
 	int bytes_left;
 	int bytes_recv;
 	char file_name[MESSAGE_LENGTH]; 
@@ -75,7 +74,7 @@ int main(int argc, char* argv[]) {
 		}
 
 		/* Check if the file was found on server*/
-		if (strcmp(file_on_server,"The file was found.") == 0) {
+		if (strcmp(file_on_server,"File found.") == 0) {
 
 			/* Get the file size from server*/
 			if (read(client_sock, (int *) &size_of_file, sizeof(size_of_file)) == -1) {
@@ -111,6 +110,7 @@ int main(int argc, char* argv[]) {
 					}
 					bytes_left = size_of_file;
 					while (((bytes_recv = recv(client_sock, file_buffer, BUFSIZ, 0 )) > 0) && (bytes_left > 0)) {
+
 						fwrite(file_buffer, sizeof(char), bytes_recv, file_write);
 						bytes_left -= bytes_recv;
 					}
@@ -126,16 +126,16 @@ int main(int argc, char* argv[]) {
 					}
 				}
 			}
-			
 		}
 		else {
 			printf("%s\n",file_on_server);
 		}
+
 		close(client_sock);
 
+		/* Check if the client requests another file*/
 		printf("Enter the name of the next file or 'q' to exit.\n");
 		scanf("%s", file_name);
-
 		if (strcmp(file_name,"q") == 0) {
 			exit(EXIT_SUCCESS);
 		}
