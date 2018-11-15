@@ -75,7 +75,7 @@ void handleRequest(int socket_des) {
 
 				if (strcmp(msg_client,"ok") == 0) {
 					data_left = file_stats.st_size;
-					printf("File transfer start.\n");
+					printf("File transfer start on %d.\n",getpid());
 					while (data_left > 0) {
 						if ((bytes_sent = sendfile(socket_des, read_file, &file_offset, BUFSIZ)) == -1) {
 							perror("Server send file");
@@ -83,7 +83,7 @@ void handleRequest(int socket_des) {
 						}
 						data_left -= bytes_sent;
 					}
-					printf("File sent to the client.\n");
+					printf("File sent to the client on %d.\n",getpid());
 				}
 				close(read_file);
 				exit(EXIT_SUCCESS);

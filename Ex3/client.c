@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
 			exit(EXIT_FAILURE);
 		}
 
-		if (send(client_sock, msg, strlen(msg), 0) == -1) {
+		if (send(client_sock, msg, sizeof(msg), 0) == -1) {
 			perror("Client send");
 			exit(EXIT_FAILURE);
 		}
