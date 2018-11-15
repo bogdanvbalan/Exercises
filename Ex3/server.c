@@ -13,7 +13,7 @@
 
 #define PORT 20000
 #define SOURCE_DIR "/home/bogdan/Desktop/Source/"
-
+#define MESSAGE_LENGTH 256
 
 
 //Function used to handle the request for each client
@@ -21,13 +21,13 @@
 void handleRequest(int socket_des) {
 	int valread, read_file;
 	int srv_rsp = -1;
-	char msg_client[256];;  // name of the file requested by client
+	char msg_client[MESSAGE_LENGTH];;  // name of the file requested by client
 	char *source_dir = SOURCE_DIR;  // the path to source dir
 	DIR *dp = NULL;     // directory stream
 	struct dirent *dptr = NULL; // structure to get info on the directory 
 	struct stat file_stats; //the stats of the file that is open 
-	char file_found[23] = "The file was found.";
-	char file_not_found[23] = "The file was not found.";
+	char file_found[MESSAGE_LENGTH] = "The file was found.";
+	char file_not_found[MESSAGE_LENGTH] = "The file was not found.";
 	int data_left;
 	int bytes_sent = 0;
 	off_t file_offset = 0;
