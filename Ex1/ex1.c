@@ -72,7 +72,7 @@ void remove_from_result(int val) {
    	int i, j;
    	for (i = 0; i < result_length; i++) {
    		if (result_check[i] == val) {
-   			for (j = i - 1; j < result_length - 1; j++) {
+   			for (j = i; j < result_length - 1; j++) {
    				result_check[j] = result_check[j+1];
    			}
    			result_length--;
