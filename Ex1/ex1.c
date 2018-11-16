@@ -53,9 +53,11 @@ void* thread_routine(void* data) {
 			print();
 		}
 		else {
+			pthread_mutex_lock(&mutex);
 			printf("Thread %d executes add(%d)\n", thd_id,parameter);
 			add(parameter);
 			add_to_result(parameter);  //test function
+			pthread_mutex_unlock(&mutex);
 		}
 		no_of_operations--;
 	}
