@@ -10,61 +10,79 @@
 #define SERVER_NAME   "/server"
 #define QUEUE_PERMISSIONS 0660
 #define MAX_MESSAGES 10
-
-typedef struct msg {
-    int name;
-    int no_of_seats;
-} message;
+#define MESSAGE_LENGTH 256
 
 int main () {
-    char client_name[64];
-    mqd_t mqclient, mqserver;   // queue descriptor
-    
-    message msgsnt; // the message that will be sent
-    msgsnt.name = getpid();
-    size_t size_client_messsage = sizeof(msgsnt);
-    
-    char server_response[128];     // used to store the message received from server
-    size_t size_server_response = sizeof(server_response);
+    int seats;
+    char message[MESSAGE_LENGTH];
+    char client_name[MESSAGE_LENGTH];
+    struct mq_attr attr;
+    size_t size_of_message = sizeof(message);
+    mqd_t server_desc, client_desc;
 
-    sprintf (client_name, "/%d", getpid());
-
-    struct mq_attr attr;  // struct used to set the arguments for mq_open
-
+    /* Create a queue which will be used to communicate with the server*/
     attr.mq_flags = 0;
     attr.mq_maxmsg = MAX_MESSAGES;
-    attr.mq_msgsize = size_server_response;
+    attr.mq_msgsize = size_of_message;
     attr.mq_curmsgs = 0;
 
-    if ((mqclient = mq_open (client_name, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {  // create a queue on which the server can send the response
-        perror("Client mq_open");
-        exit(1);
+    sprintf(client_name, "/%d", getpid());  //create the name of the client based on pid
+
+    if ((client_desc = mq_open(client_name, O_RDWR | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
+        perror("Client create queue");
+        exit(EXIT_FAILURE);
+    } 
+
+    /* Open server's message queue and send the name*/
+    if ((server_desc = mq_open(SERVER_NAME, O_WRONLY)) == -1) {
+        perror("Client open server queue");
+        exit(EXIT_FAILURE);
+    }
+    if ((mq_send(server_desc, client_name, size_of_message, 0)) == -1) {
+        perror("Client send name");
+        exit(EXIT_FAILURE);
     }
 
-    if ((mqserver = mq_open (SERVER_NAME, O_WRONLY)) == -1) {  // open the server queue to send the request
-        perror("Client mq_open on server");
+    /* Check if server is ready to accept the request*/
+    if ((mq_receive(client_desc, message, size_of_message, NULL)) == -1) {
+            perror("Client receive server status");
+            exit(EXIT_FAILURE);
+    }
+    if (strcmp(message,"OK") == 0) {
+        printf("The server is ready to accept the request.\n");
     }
 
-    printf("How many seats you want to reserve ? \n");    // get the number of seats that will be reserved
-    scanf("%d",&msgsnt.no_of_seats);
+    /* Send the seats request*/
+    printf("Enter the number of seats:\n");
+    scanf("%d",&seats);
 
-    if (mq_send(mqserver, (char*) &msgsnt, size_client_messsage, 0) == -1) {
-        perror("Client not able to send message to server.\n");
-        exit(1);
-    }
-    if (mq_receive (mqclient, (char *) server_response, size_server_response, NULL) == -1) {  // read the response from server
-            perror("Client: mq_receive");
-            exit(1);
-    }
-    printf("Server response: %s\n",server_response);
+    memset(message, 0, size_of_message);
+    sprintf(message,"%d",seats);
 
-    if (mq_close(mqclient) == -1) {
+    if ((mq_send(client_desc, message, size_of_message, 0)) == -1) {
+        perror("Client send seats request");
+        exit(EXIT_FAILURE);
+    }
+
+    /* Get the reservation from server*/
+    if ((mq_receive(client_desc, message, size_of_message, NULL)) == -1) {
+            perror("Client receive server reservation");
+            exit(EXIT_FAILURE);
+    }
+    if (strcmp(message,"OK") == 0) {
+        printf("Got reservation for %d seats.\n",seats);
+    }
+    else {
+        printf("Reservation failed, only %s seats are available.\n", message);
+    }
+    
+    if (mq_close(client_desc) == -1) {
         perror("Client mq_close");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     if (mq_unlink(client_name) == -1) {
         perror("Client mq_unlink");
-        exit(1);
+        exit(EXIT_FAILURE);
     }
-  }
+}
