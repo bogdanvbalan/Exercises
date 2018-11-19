@@ -8,9 +8,6 @@
 #include <mqueue.h>
 #include "common.h"
 
-void handleRequest() {
-    
-}
 
 int main () {
     int seats;
@@ -52,9 +49,9 @@ int main () {
         printf("The server is ready to accept the request.\n");
     }
 
-    /* Send the seats request*/
-    printf("Enter the number of seats:\n");
-    scanf("%d",&seats);
+    /* Send a random number of seats*/
+    srand(getpid());
+    seats = rand() % 100;
 
     memset(message, 0, size_of_message);
     sprintf(message,"%d",seats);
