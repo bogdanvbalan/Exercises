@@ -8,6 +8,9 @@
 #include <mqueue.h>
 #include "common.h"
 
+void handleRequest() {
+    
+}
 
 int main () {
     int seats;
