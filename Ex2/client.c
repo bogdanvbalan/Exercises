@@ -6,11 +6,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <mqueue.h>
+#include "common.h"
 
-#define SERVER_NAME   "/server"
-#define QUEUE_PERMISSIONS 0660
-#define MAX_MESSAGES 10
-#define MESSAGE_LENGTH 256
 
 int main () {
     int seats;

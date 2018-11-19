@@ -9,12 +9,8 @@
 #include <pthread.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include "common.h"
 
-#define SERVER_NAME   "/server"
-#define QUEUE_PERMISSIONS 0660
-#define MAX_MESSAGES 10
-#define MAX_NO_OF_SEATS 200
-#define MESSAGE_LENGTH 256
 
 int main () {
     int seats = MAX_NO_OF_SEATS;
