@@ -11,13 +11,10 @@
 #include <fcntl.h>
 #include <sys/sendfile.h>
 
-#define PORT 20000
-#define SOURCE_DIR "/home/bogdan/Desktop/Source/" // the path to the files that can be sent to the client
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
-#define SERVER_IP "127.0.0.1"
 
 /* Function used to handle the requests*/
-void handleRequest(int socket_des) {
+void handleRequest(int socket_des, char source_dir[1024]) {
 	int read_file;
 	int file_size;
 	int bytes_sent;
@@ -36,7 +33,7 @@ void handleRequest(int socket_des) {
 	printf("Received a request for %s file.\n", msg_client);
 
 	/* Open the directory specified as source*/
-	if((dp = opendir(SOURCE_DIR)) == NULL) {
+	if((dp = opendir(source_dir)) == NULL) {
 		perror("Server open dir");
 		exit(EXIT_FAILURE);
 	}
@@ -53,7 +50,7 @@ void handleRequest(int socket_des) {
 			}
 
 			/* Open the file indicated by client*/
-			chdir(SOURCE_DIR);                              
+			chdir(source_dir);                              
 			if ((read_file = open(msg_client, O_RDONLY)) == - 1) {   
 				perror("Server open file");
 				exit(EXIT_FAILURE);
@@ -100,14 +97,30 @@ void handleRequest(int socket_des) {
 }
 
 int main() {
-	int server_fd, new_socket; 
+	int server_fd, new_socket, port;
+	char temp[128], path[1024], server_ip[512];
 	struct sockaddr_in address; // address used on the socket
 	size_t address_len = sizeof(address);
-	
-	address.sin_family = AF_INET;
-	address.sin_port = htons(PORT);
+	FILE *config;
 
-	if (inet_pton (AF_INET, SERVER_IP, &address.sin_addr) <= 0) {
+	/* Get the configuration from server.cfg*/
+	config = fopen("server.cfg", "r");
+	while (fscanf(config, "%s", temp) != EOF) {
+		if (strcmp(temp, "PORT:") == 0) {
+			fscanf(config, "%d", &port);
+		}
+		else if(strcmp(temp, "SOURCE_DIR:") == 0) {
+			fscanf(config, "%s", path);
+		}
+		else if(strcmp(temp, "SERVER_IP:") == 0) {
+			fscanf(config, "%s", server_ip);
+		} 
+	}
+
+	address.sin_family = AF_INET;
+	address.sin_port = htons(port);
+
+	if (inet_pton (AF_INET, server_ip, &address.sin_addr) <= 0) {
 		perror("Server add convert");
 		exit(EXIT_FAILURE);
 	}
@@ -139,7 +152,7 @@ int main() {
 				close(new_socket);
 				break;
 			case 0:
-				handleRequest(new_socket); 
+				handleRequest(new_socket, path); 
 				exit(EXIT_SUCCESS);
 			default:
 				close(new_socket);

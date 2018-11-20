@@ -10,15 +10,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
-#define PORT 20000                             
-#define PATH "/home/bogdan/Desktop/Target/" // the path to the directory where the files will be saved
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
-#define SERVER_IP "127.0.0.1"
 
 int main(int argc, char* argv[]) {
 	int i; // used to loop through the number of arguments
-	int client_sock; 
+	int client_sock, port; 
+	char temp [128], path[1024], server_ip[512];
 	unsigned long size_of_file; 
 	int bytes_left;
 	int bytes_recv;
@@ -29,7 +26,7 @@ int main(int argc, char* argv[]) {
 	unsigned long available_space; //used to store the free bytes on disk
 	struct sockaddr_in serv_addr; 
 	struct statvfs stat; // used to get the available space on disk
-	FILE *file_write;
+	FILE *file_write, *config;
 	
 	/* Get the arguments in file_name*/
 	if (argc == 1) { // exit if no argument is received
@@ -43,9 +40,23 @@ int main(int argc, char* argv[]) {
 		}
 	}
     
+    /* Get the configuration from client.cfg*/
+	config = fopen("client.cfg", "r");
+	while (fscanf(config, "%s", temp) != EOF) {
+		if (strcmp(temp, "PORT:") == 0) {
+			fscanf(config, "%d", &port);
+		}
+		else if(strcmp(temp, "SOURCE_DIR:") == 0) {
+			fscanf(config, "%s", path);
+		}
+		else if(strcmp(temp, "SERVER_IP:") == 0) {
+			fscanf(config, "%s", server_ip);
+		} 
+	}
+
     /* Set port and ipv4 */
 	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_port = htons(PORT);
+	serv_addr.sin_port = htons(port);
 
 	while (1) {   // client loops until 'q' key is received, the loop exits using a call to exit()
 
@@ -54,7 +65,7 @@ int main(int argc, char* argv[]) {
 		perror("Client socket create");
 		exit(EXIT_FAILURE);
 		}
-		if (inet_pton (AF_INET, SERVER_IP, &serv_addr.sin_addr) <= 0) {
+		if (inet_pton (AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
 			perror("Client add convert");
 			exit(EXIT_FAILURE);
 		}
@@ -87,7 +98,7 @@ int main(int argc, char* argv[]) {
 			else {
 
 				/* Get the space available on disk*/
-				if (statvfs(PATH, &stat) != 0) {    
+				if (statvfs(path, &stat) != 0) {    
 					perror("Client statvfs");
 					exit(EXIT_FAILURE);
 				}
@@ -101,7 +112,7 @@ int main(int argc, char* argv[]) {
 						exit(EXIT_FAILURE);
 					}
 
-					chdir(PATH); // change working position to the directory indicated in PATH
+					chdir(path); // change working position to the directory indicated in PATH
 
 					/* Save the file that is sent by server*/
 					if ((file_write = fopen(file_name,"w")) == NULL) {
