@@ -15,6 +15,7 @@
 int main(int argc, char* argv[]) {
 	int i; // used to loop through the number of arguments
 	int client_sock, port; 
+	int current_byte;
 	char temp [128], path[1024], server_ip[512];
 	unsigned long size_of_file; 
 	int bytes_left;
@@ -33,10 +34,23 @@ int main(int argc, char* argv[]) {
 		printf("No file name was sent as argument\n");  
 		exit(EXIT_FAILURE);
 	}
-	for (i = 1; i < argc; i++) { // store the arguments as a single string
-		strcat(file_name, argv[i]);
-		if (i + 1 < argc) {
-			strcat(file_name, " ");
+
+	/* Get the arguments and store in file_name*/
+	current_byte = 0;
+	for (i = 1; i < argc; i++) {
+		current_byte += strlen(argv[i]);
+	}
+	if (current_byte > MESSAGE_LENGTH - 1) {
+		printf("Argument too long.\n");
+	}
+	else {
+		for (i = 1; i < argc; i++) { // store the arguments as a single string
+			if (current_byte + sizeof(argv[i]) < MESSAGE_LENGTH - 1) {
+				strcat(file_name, argv[i]);
+			}
+			if (i + 1 < argc) {
+				strcat(file_name, " ");
+			}
 		}
 	}
     
