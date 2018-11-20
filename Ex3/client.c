@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
 					chdir(path); // change working position to the directory indicated in PATH
 
 					/* Save the file that is sent by server*/
-					if ((file_write = fopen(file_name,"w")) == NULL) {
+					if ((file_write = fopen(file_name,"wb")) == NULL) {
 						perror("Client create file");
 						exit(EXIT_FAILURE);
 					}
