@@ -87,7 +87,6 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 			if (strcmp(msg_client,"ok") == 0) {
 				printf("File transfer started.\n");
 				/* Start sending the file to the client*/
-				printf("%d\n",file_size);
 				while (file_size > 0) {
 					if ((bytes_sent = sendfile(socket_des, read_file, &file_offset, BUFSIZ)) == -1) {
 						perror("Server send file");
@@ -105,6 +104,7 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 			send(socket_des, &file_status, sizeof(file_status),0 );
 		}
 		file_found = 0;
+		file_offset = 0;
 	}
 	close(socket_des);
 }
