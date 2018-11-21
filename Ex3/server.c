@@ -18,30 +18,41 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 	int read_file;
 	int file_size;
 	int bytes_sent;
+	int file_found = 0;
 	off_t file_offset = 0;
 	char msg_client[MESSAGE_LENGTH];
 	char file_status[MESSAGE_LENGTH];
+	char file_buffer[BUFSIZ];
 	DIR *dp = NULL;     
 	struct dirent *dptr = NULL; // structure to get info on the files
 	struct stat file_stats; //the stats of the file requested by client
 	
-	/* Get the name of the file from client*/
-	if(read(socket_des, &msg_client, sizeof(msg_client)) == -1) {
-		perror("Server read request");
-		exit(EXIT_FAILURE);
-	}
-	printf("Received a request for %s file.\n", msg_client);
+	while (1) {
+		/* Get the name of the file from client*/
+		if(read(socket_des, &msg_client, sizeof(msg_client)) == -1) {
+			perror("Server read request");
+			exit(EXIT_FAILURE);
+		}
+		printf("Received a request for %s file.\n", msg_client);
+		if(strcmp(msg_client,"q") == 0) {
+			printf("Ended the connection for client\n");
+			exit(EXIT_SUCCESS);
+		}
+		/* Open the directory specified as source*/
+		if((dp = opendir(source_dir)) == NULL) {
+			perror("Server open dir");
+			exit(EXIT_FAILURE);
+		}
 
-	/* Open the directory specified as source*/
-	if((dp = opendir(source_dir)) == NULL) {
-		perror("Server open dir");
-		exit(EXIT_FAILURE);
-	}
+		/* Check if the file is present in the directory*/
+		while ((dptr = readdir(dp)) != NULL) {     
+			if (strcmp(dptr->d_name,msg_client) == 0) {
+				file_found = 1;
+			}
+		}
 
-	/* Check if the file is present in the directory*/
-	while ((dptr = readdir(dp)) != NULL) {     
-		if (strcmp(dptr->d_name,msg_client) == 0) {
-
+		/* If the file is found start the procedure to send it to the client*/
+		if (file_found == 1) {
 			/* Send the a message to the client indicating that the file is present.*/
 			strncpy(file_status,"File found.",MESSAGE_LENGTH);
 			if(send(socket_des, &file_status, sizeof(file_status), 0) == -1) {
@@ -76,6 +87,7 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 			if (strcmp(msg_client,"ok") == 0) {
 				printf("File transfer started.\n");
 				/* Start sending the file to the client*/
+				printf("%d\n",file_size);
 				while (file_size > 0) {
 					if ((bytes_sent = sendfile(socket_des, read_file, &file_offset, BUFSIZ)) == -1) {
 						perror("Server send file");
@@ -86,13 +98,14 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 				printf("File sent to the client.\n");
 			}
 			close(read_file);
-			exit(EXIT_SUCCESS);
 		}
+		else {
+			/* If the file was not found, send the status to client and close the connection.*/
+			strncpy(file_status, "File not found.", MESSAGE_LENGTH);
+			send(socket_des, &file_status, sizeof(file_status),0 );
+		}
+		file_found = 0;
 	}
-
-	/* If the file was not found, send the status to client and close the connection.*/
-	strncpy(file_status, "File not found.", MESSAGE_LENGTH);
-	send(socket_des, &file_status, sizeof(file_status),0 );
 	close(socket_des);
 }
 
@@ -154,7 +167,7 @@ int main() {
 		exit(EXIT_FAILURE);
 
 	}
-	if (listen (server_fd, 5) < 0) {
+	if (listen (server_fd, 10) < 0) {
 		perror("Server set the socket to listen mode.");
 		exit(EXIT_FAILURE);
 	}

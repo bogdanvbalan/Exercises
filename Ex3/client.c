@@ -90,21 +90,21 @@ int main(int argc, char* argv[]) {
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_port = htons(port);
 
-	while (1) {   // client loops until 'q' key is received, the loop exits using a call to exit()
-
-		/* Create a socket and connect to server ip address*/
-		if ((client_sock = socket(AF_INET, SOCK_STREAM,0)) == -1) {
-		perror("Client socket create");
+	/* Create a socket and connect to server ip address*/
+	if ((client_sock = socket(AF_INET, SOCK_STREAM,0)) == -1) {
+	perror("Client socket create");
+	exit(EXIT_FAILURE);
+	}
+	if (inet_pton (AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
+		perror("Client add convert");
 		exit(EXIT_FAILURE);
-		}
-		if (inet_pton (AF_INET, server_ip, &serv_addr.sin_addr) <= 0) {
-			perror("Client add convert");
-			exit(EXIT_FAILURE);
-		}
-		if (connect(client_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
-			perror("Client connection");
-			exit(EXIT_FAILURE);
-		}
+	}
+	if (connect(client_sock, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) == -1) {
+		perror("Client connection");
+		exit(EXIT_FAILURE);
+	}
+
+	while (1) {   // client loops until 'q' key is received, the loop exits using a call to exit()
 
 		/* Send the name of the file to server and receive the availability of the file*/
 		if (send(client_sock, file_name, sizeof(file_name), 0) == -1) {
@@ -152,11 +152,14 @@ int main(int argc, char* argv[]) {
 						exit(EXIT_FAILURE);
 					}
 					bytes_left = size_of_file;
-					while (((bytes_recv = recv(client_sock, file_buffer, BUFSIZ, 0 )) > 0) && (bytes_left > 0)) {
-
+					printf("%d\n",bytes_left);
+					while ((bytes_left > 0) && ((bytes_recv = recv(client_sock, file_buffer, BUFSIZ, 0 )) > 0)) {
+						
 						fwrite(file_buffer, sizeof(char), bytes_recv, file_write);
 						bytes_left -= bytes_recv;
+						printf("%d\n",bytes_left);
 					}
+					printf("Got HERE\n");
 					fclose(file_write);
 					printf("Got file %s from server.\n",file_name);
 				}
@@ -174,14 +177,15 @@ int main(int argc, char* argv[]) {
 			printf("%s\n",file_on_server);
 		}
 
-		close(client_sock);
-
 		/* Check if the client requests another file*/
 		printf("Enter the name of the next file or 'q' to exit.\n");
 		scanf("%s", file_name);
 		if (strcmp(file_name,"q") == 0) {
+			send(client_sock, file_name, sizeof(file_name), 0);
 			exit(EXIT_SUCCESS);
 		}
 	}
+	close(client_sock);
+
 	return 0;
 }
