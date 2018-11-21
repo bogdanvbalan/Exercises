@@ -13,18 +13,20 @@
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 
 int main(int argc, char* argv[]) {
-	int i; // used to loop through the number of arguments
+	int i, counter, rf; // used to loop through the number of arguments
 	int client_sock, port; 
 	int current_byte;
-	char temp [128], path[1024], server_ip[512];
-	unsigned long size_of_file; 
 	int bytes_left;
 	int bytes_recv;
 	char file_name[MESSAGE_LENGTH]; 
 	char file_on_server[MESSAGE_LENGTH]; // used to store the availability response from server
 	char size_rsp[MESSAGE_LENGTH]; // used to store the client response for size of the file
 	char file_buffer[BUFSIZ];
+	char temp_char;
+	char temp [MESSAGE_LENGTH], path[MESSAGE_LENGTH], server_ip[MESSAGE_LENGTH];
+	char read_file [6][MESSAGE_LENGTH];
 	unsigned long available_space; //used to store the free bytes on disk
+	unsigned long size_of_file; 
 	struct sockaddr_in serv_addr; 
 	struct statvfs stat; // used to get the available space on disk
 	FILE *file_write, *config;
@@ -45,7 +47,7 @@ int main(int argc, char* argv[]) {
 	}
 	else {
 		for (i = 1; i < argc; i++) { // store the arguments as a single string
-			if (current_byte + sizeof(argv[i]) < MESSAGE_LENGTH - 1) {
+			if (current_byte + sizeof(argv[i]) < MESSAGE_LENGTH - 2) {
 				strcat(file_name, argv[i]);
 			}
 			if (i + 1 < argc) {
@@ -56,17 +58,33 @@ int main(int argc, char* argv[]) {
     
     /* Get the configuration from client.cfg*/
 	config = fopen("client.cfg", "r");
-	while (fscanf(config, "%s", temp) != EOF) {
-		if (strcmp(temp, "PORT:") == 0) {
-			fscanf(config, "%d", &port);
+	counter = 0;
+	rf = 0;
+	if (config != NULL) {
+		while ((temp_char = getc(config)) != EOF) {
+			while ((temp_char != '\n') && (temp_char != ' ') && (counter < MESSAGE_LENGTH -1)) {
+				temp[counter++] = temp_char;
+				if((temp_char = getc(config)) == EOF) {
+					break;
+				}
+			}
+			counter = 0;
+			strcpy(read_file[rf++],temp);
+			memset(temp, 0, MESSAGE_LENGTH);
 		}
-		else if(strcmp(temp, "SOURCE_DIR:") == 0) {
-			fscanf(config, "%s", path);
-		}
-		else if(strcmp(temp, "SERVER_IP:") == 0) {
-			fscanf(config, "%s", server_ip);
-		} 
 	}
+	for (i = rf - 1; i >= 0; i--) {
+		if ((strcmp(read_file[i], "PORT:")) == 0) {
+			port = atoi(read_file[i+1]);
+		}
+		else if ((strcmp(read_file[i], "SOURCE_DIR:")) == 0) {
+			strcpy(path, read_file[i+1]);
+		}
+		else if ((strcmp(read_file[i], "SERVER_IP:")) == 0) {
+			strcpy(server_ip, read_file[i+1]);
+		}
+	}
+	fclose(config);
 
     /* Set port and ipv4 */
 	serv_addr.sin_family = AF_INET;

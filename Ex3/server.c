@@ -97,25 +97,44 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 }
 
 int main() {
-	int server_fd, new_socket, port;
-	char temp[128], path[1024], server_ip[512];
+	int server_fd, new_socket, port, i, rf, counter;
+	char temp[MESSAGE_LENGTH], path[MESSAGE_LENGTH], server_ip[MESSAGE_LENGTH];
+	char temp_char;
+	char read_file[6][MESSAGE_LENGTH];
 	struct sockaddr_in address; // address used on the socket
 	size_t address_len = sizeof(address);
 	FILE *config;
 
-	/* Get the configuration from server.cfg*/
+	/* Get the configuration from client.cfg*/
 	config = fopen("server.cfg", "r");
-	while (fscanf(config, "%s", temp) != EOF) {
-		if (strcmp(temp, "PORT:") == 0) {
-			fscanf(config, "%d", &port);
+	counter = 0;
+	rf = 0;
+	if (config != NULL) {
+		while ((temp_char = getc(config)) != EOF) {
+			while ((temp_char != '\n') && (temp_char != ' ') && (counter < MESSAGE_LENGTH -1)) {
+				temp[counter++] = temp_char;
+				if((temp_char = getc(config)) == EOF) {
+					break;
+				}
+			}
+			counter = 0;
+			strcpy(read_file[rf++],temp);
+			memset(temp, 0, MESSAGE_LENGTH);
 		}
-		else if(strcmp(temp, "SOURCE_DIR:") == 0) {
-			fscanf(config, "%s", path);
-		}
-		else if(strcmp(temp, "SERVER_IP:") == 0) {
-			fscanf(config, "%s", server_ip);
-		} 
 	}
+	for (i = rf - 1; i >= 0; i--) {
+		if ((strcmp(read_file[i], "PORT:")) == 0) {
+			port = atoi(read_file[i+1]);
+		}
+		else if ((strcmp(read_file[i], "SOURCE_DIR:")) == 0) {
+			strcpy(path, read_file[i+1]);
+		}
+		else if ((strcmp(read_file[i], "SERVER_IP:")) == 0) {
+			strcpy(server_ip, read_file[i+1]);
+		}
+	}
+	fclose(config);
+
 
 	address.sin_family = AF_INET;
 	address.sin_port = htons(port);
