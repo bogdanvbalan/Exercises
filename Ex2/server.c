@@ -15,7 +15,7 @@ static int seats = MAX_NO_OF_SEATS;
 pthread_mutex_t mutex;    // mutex used to protect the number of seats
 pthread_mutex_t pmutex;   // mutex used to protect the name of the client 
 
-int srv_name = 100;
+int srv_name = 10;
 
 /* Handle a request from a client*/
 void *handleRequests(void *data) {
@@ -91,6 +91,16 @@ void *handleRequests(void *data) {
         printf("Not enough seats for %s.\n\n", client_name);
     }
     pthread_mutex_unlock(&mutex);
+
+    if (mq_close(server_desc) == -1) {
+        perror("Server mq_close");
+        exit(EXIT_FAILURE);
+    }
+
+    if (mq_unlink(server_name) == -1) {
+        perror("Server mq_unlink");
+        exit(EXIT_FAILURE);
+    }
 }
 
 int main () {
@@ -111,7 +121,7 @@ int main () {
     pthread_mutex_init(&pmutex, NULL);
 
     /* Create a message queue on which the client will send the name of its own queue*/
-    if ((server_desc = mq_open(SERVER_N, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
+    if ((server_desc = mq_open(SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
         perror("Server create queue");
         exit(EXIT_FAILURE);
     }

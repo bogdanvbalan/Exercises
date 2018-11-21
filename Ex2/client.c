@@ -77,7 +77,12 @@ void *handleClient(void *data) {
         printf("Got reservation for %d seats.\n",seats);
     }
     else {
-        printf("Reservation failed, only %s seats are available.\n", message);
+        if (atoi(message) == 0) {
+            printf("All seats are reserved.\n");
+        }
+        else {
+            printf("Reservation failed, only %s seats are available.\n", message);
+        }
     }
     
     if (mq_close(client_desc) == -1) {
