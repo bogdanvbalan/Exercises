@@ -15,13 +15,30 @@ static int seats = MAX_NO_OF_SEATS;
 pthread_mutex_t mutex;    // mutex used to protect the number of seats
 pthread_mutex_t pmutex;   // mutex used to protect the name of the client 
 
+int srv_name = 100;
+
 /* Handle a request from a client*/
 void *handleRequests(void *data) {
 	char client_name[MESSAGE_LENGTH];
+    char server_name[MESSAGE_LENGTH];
 	char message[MESSAGE_LENGTH];
+    struct mq_attr attr;
 	int seats_requested;
 	size_t size_of_message = sizeof(message);
-	mqd_t client_desc;
+	mqd_t client_desc, server_desc;
+    
+    /* Create a queue which will be used to communicate with the client*/
+    attr.mq_flags = 0;
+    attr.mq_maxmsg = MAX_MESSAGES;
+    attr.mq_msgsize = size_of_message;
+    attr.mq_curmsgs = 0;
+
+    sprintf(server_name, "/%d", srv_name++);
+
+    if ((server_desc = mq_open(server_name, O_RDWR | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
+        perror("Sever create queue in thread");
+        exit(EXIT_FAILURE);
+    } 
 
 	/* Copy the name of the client*/
 	strcpy(client_name, (char *)data);
@@ -35,15 +52,15 @@ void *handleRequests(void *data) {
 
     /* Inform client that the server is ready to accept the request*/
     memset(message,0,size_of_message);
-    strcpy(message,"OK");
+    strcpy(message,server_name);
     if ((mq_send(client_desc, message, size_of_message, 0)) == -1) {
-        perror("Server send 'OK' to client");
+        perror("Server send name to client");
         exit(EXIT_FAILURE);
     }
 
     /* Get the number of seats from the client */
     memset(message, 0, size_of_message);
-    if ((mq_receive(client_desc, message, size_of_message, NULL)) == -1) {
+    if ((mq_receive(server_desc, message, size_of_message, NULL)) == -1) {
             perror("Client receive server status");
             exit(EXIT_FAILURE);
     }
@@ -94,7 +111,7 @@ int main () {
     pthread_mutex_init(&pmutex, NULL);
 
     /* Create a message queue on which the client will send the name of its own queue*/
-    if ((server_desc = mq_open(SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
+    if ((server_desc = mq_open(SERVER_N, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
         perror("Server create queue");
         exit(EXIT_FAILURE);
     }
