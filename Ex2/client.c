@@ -6,14 +6,14 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <mqueue.h>
+#include "common.h"
+#include <pthread.h>
+#include <time.h>
 
-#define SERVER_NAME   "/server"
-#define QUEUE_PERMISSIONS 0660
-#define MAX_MESSAGES 10
-#define MESSAGE_LENGTH 256
+#define NUM_THREADS 100
 
-int main () {
-    int seats;
+void *handleClient(void *data) {
+	int seats;
     char message[MESSAGE_LENGTH];
     char client_name[MESSAGE_LENGTH];
     struct mq_attr attr;
@@ -26,7 +26,7 @@ int main () {
     attr.mq_msgsize = size_of_message;
     attr.mq_curmsgs = 0;
 
-    sprintf(client_name, "/%d", getpid());  //create the name of the client based on pid
+    sprintf(client_name, "/%ld", pthread_self());  //create the name of the client based on pid
 
     if ((client_desc = mq_open(client_name, O_RDWR | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
         perror("Client create queue");
@@ -45,21 +45,25 @@ int main () {
 
     /* Check if server is ready to accept the request*/
     if ((mq_receive(client_desc, message, size_of_message, NULL)) == -1) {
-            perror("Client receive server status");
+            perror("Client receive server name");
             exit(EXIT_FAILURE);
     }
-    if (strcmp(message,"OK") == 0) {
-        printf("The server is ready to accept the request.\n");
+    printf("Got the name of server as: %s.\n",message);
+
+    /* Open server's message queue and send the name*/
+    if ((server_desc = mq_open(message, O_WRONLY)) == -1) {
+        perror("Client open server queue");
+        exit(EXIT_FAILURE);
     }
 
-    /* Send the seats request*/
-    printf("Enter the number of seats:\n");
-    scanf("%d",&seats);
+    /* Send a random number of seats*/
+    srand(time(NULL) * pthread_self());
+    seats = rand() % 100;
 
     memset(message, 0, size_of_message);
     sprintf(message,"%d",seats);
 
-    if ((mq_send(client_desc, message, size_of_message, 0)) == -1) {
+    if ((mq_send(server_desc, message, size_of_message, 0)) == -1) {
         perror("Client send seats request");
         exit(EXIT_FAILURE);
     }
@@ -73,7 +77,12 @@ int main () {
         printf("Got reservation for %d seats.\n",seats);
     }
     else {
-        printf("Reservation failed, only %s seats are available.\n", message);
+        if (atoi(message) == 0) {
+            printf("All seats are reserved.\n");
+        }
+        else {
+            printf("Reservation failed, only %s seats are available.\n", message);
+        }
     }
     
     if (mq_close(client_desc) == -1) {
@@ -84,5 +93,21 @@ int main () {
     if (mq_unlink(client_name) == -1) {
         perror("Client mq_unlink");
         exit(EXIT_FAILURE);
+    }
+}
+int main () {
+	int i;
+    pthread_t tids[NUM_THREADS];
+
+    for (i = 0; i < NUM_THREADS; i++) {
+    	if((pthread_create(&tids[i], NULL, handleClient, NULL)) != 0) {
+    		perror("Client create thread");
+    	}
+    }
+
+    for (i = 0; i < NUM_THREADS; i++) {
+    	if((pthread_join(tids[i], NULL)) != 0) {
+    		perror("Client create thread");
+    	}
     }
 }
