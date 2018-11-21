@@ -24,14 +24,13 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 	int pid_c = getpid();
 	char msg_client[MESSAGE_LENGTH];
 	char file_status[MESSAGE_LENGTH];
-	char file_buffer[BUFSIZ];
 	DIR *dp = NULL;     
 	struct dirent *dptr = NULL; // structure to get info on the files
 	struct stat file_stats; //the stats of the file requested by client
 	char logs [12][MESSAGE_LENGTH];
 	FILE *log;
 
-	if ((log = fopen( "server.log" , "w" )) == NULL) {
+	if ((log = fopen( "server.log" , "a" )) == NULL) {
 		perror("Open server log");
 		exit(EXIT_FAILURE);
 	}
@@ -53,7 +52,7 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 		memset(msg_client, 0, MESSAGE_LENGTH);
 		if(read(socket_des, &msg_client, sizeof(msg_client)) == -1) {
 			perror("Server read request");
-			sprintf(logs[log_index++],"%d:Server failed at get name of client.", pid_c);
+			sprintf(logs[log_index++],"%d:Server failed at get name of file.", pid_c);
 			exit(EXIT_FAILURE);
 		}
 		sprintf(logs[log_index++],"%d:Server got '%s' as file name.", pid_c, msg_client);
