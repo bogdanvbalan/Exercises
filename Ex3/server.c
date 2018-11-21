@@ -15,32 +15,59 @@
 
 /* Function used to handle the requests*/
 void handleRequest(int socket_des, char source_dir[1024]) {
+	int i, log_index;
 	int read_file;
 	int file_size;
 	int bytes_sent;
 	int file_found = 0;
 	off_t file_offset = 0;
+	int pid_c = getpid();
 	char msg_client[MESSAGE_LENGTH];
 	char file_status[MESSAGE_LENGTH];
 	char file_buffer[BUFSIZ];
 	DIR *dp = NULL;     
 	struct dirent *dptr = NULL; // structure to get info on the files
 	struct stat file_stats; //the stats of the file requested by client
-	
+	char logs [12][MESSAGE_LENGTH];
+	FILE *log;
+
+	if ((log = fopen( "server.log" , "w" )) == NULL) {
+		perror("Open server log");
+		exit(EXIT_FAILURE);
+	}
+
 	while (1) {
+		
+		/*Log the activity for current client*/
+		for (i = 0; i < log_index; i++) {
+			fprintf(log,"%s \n",logs[i]);
+		}	
+		/* Reset the log array*/
+		for (i = 0; i < log_index; i++) {
+			memset(logs[i], 0, MESSAGE_LENGTH);
+		}
+		log_index = 0;
+		sprintf(logs[log_index++],"=====================================================");
+
 		/* Get the name of the file from client*/
+		memset(msg_client, 0, MESSAGE_LENGTH);
 		if(read(socket_des, &msg_client, sizeof(msg_client)) == -1) {
 			perror("Server read request");
+			sprintf(logs[log_index++],"%d:Server failed at get name of client.", pid_c);
 			exit(EXIT_FAILURE);
 		}
+		sprintf(logs[log_index++],"%d:Server got '%s' as file name.", pid_c, msg_client);
 		printf("Received a request for %s file.\n", msg_client);
+
 		if(strcmp(msg_client,"q") == 0) {
 			printf("Ended the connection for client\n");
 			exit(EXIT_SUCCESS);
 		}
+
 		/* Open the directory specified as source*/
 		if((dp = opendir(source_dir)) == NULL) {
 			perror("Server open dir");
+			sprintf(logs[log_index++],"%d:Server failed at dir open.", pid_c);
 			exit(EXIT_FAILURE);
 		}
 
@@ -57,44 +84,55 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 			strncpy(file_status,"File found.",MESSAGE_LENGTH);
 			if(send(socket_des, &file_status, sizeof(file_status), 0) == -1) {
 				perror("Server send file availability");
+				sprintf(logs[log_index++],"%d:Server failed at send availability status", pid_c);
 				exit(EXIT_FAILURE);
 			}
+			sprintf(logs[log_index++],"%d:Server sent '%s' to client as file availability", pid_c, file_status);
 
 			/* Open the file indicated by client*/
 			chdir(source_dir);                              
 			if ((read_file = open(msg_client, O_RDONLY)) == - 1) {   
 				perror("Server open file");
+				sprintf(logs[log_index++],"%d:Server failed at open file.", pid_c);
 				exit(EXIT_FAILURE);
 			}
 
 			/* Get the size of the file and send it to client*/
 			if ((fstat(read_file, &file_stats)) == -1) {  
 				perror("Server get file info");
+				sprintf(logs[log_index++],"%d:Server failed at get file stats.", pid_c);
 				exit(EXIT_FAILURE);
 			}
 			file_size = file_stats.st_size;           
 			if(send(socket_des,(int *) &file_size, sizeof(file_size), 0) == -1) {
 				perror("Server send file size");
+				sprintf(logs[log_index++],"%d:Server failed at send size to client.", pid_c);
 				exit(EXIT_FAILURE);
 			}
+			sprintf(logs[log_index++],"%d:Server sent '%d' as file size to client.", pid_c, file_size);
 
 			/* Check if the client is able to accept the file*/
 			memset(msg_client,0,MESSAGE_LENGTH);
 			if ((read(socket_des, &msg_client, sizeof(msg_client))) == -1) {
 				perror("Server read size response");
+				sprintf(logs[log_index++],"%d:Server failed at read accept from client.", pid_c);
 				exit(EXIT_FAILURE);
 			}
+			sprintf(logs[log_index++],"%d:Server got '%s' as response for size from client.", pid_c, msg_client);
+
 			if (strcmp(msg_client,"ok") == 0) {
 				printf("File transfer started.\n");
 				/* Start sending the file to the client*/
 				while (file_size > 0) {
 					if ((bytes_sent = sendfile(socket_des, read_file, &file_offset, BUFSIZ)) == -1) {
 						perror("Server send file");
+						sprintf(logs[log_index++],"%d:Server failed during the sending of the file.", pid_c);
 						exit(EXIT_FAILURE);
 					}
 					file_size -= bytes_sent;
 				}
 				printf("File sent to the client.\n");
+				sprintf(logs[log_index++],"%d:File sent to client.", pid_c);
 			}
 			close(read_file);
 		}
@@ -102,10 +140,14 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 			/* If the file was not found, send the status to client and close the connection.*/
 			strncpy(file_status, "File not found.", MESSAGE_LENGTH);
 			send(socket_des, &file_status, sizeof(file_status),0 );
+			sprintf(logs[log_index++],"%d:Server sent '%s' as file availability to client.", pid_c, file_status);
 		}
 		file_found = 0;
 		file_offset = 0;
+		sprintf(logs[log_index++],"=====================================================\n");
 	}
+	fclose(log);
+	shutdown(socket_des, SHUT_RDWR);
 	close(socket_des);
 }
 
@@ -117,7 +159,7 @@ int main() {
 	struct sockaddr_in address; // address used on the socket
 	size_t address_len = sizeof(address);
 	FILE *config;
-
+	FILE *log;
 	/* Get the configuration from client.cfg*/
 	config = fopen("server.cfg", "r");
 	counter = 0;
@@ -147,7 +189,6 @@ int main() {
 		}
 	}
 	fclose(config);
-
 
 	address.sin_family = AF_INET;
 	address.sin_port = htons(port);
@@ -181,9 +222,11 @@ int main() {
 		switch (fork()) {
 			case -1:
 				printf("Can't create child. \n");
+				shutdown(new_socket, SHUT_RDWR);
 				close(new_socket);
 				break;
 			case 0:
+				close(server_fd);
 				handleRequest(new_socket, path); 
 				exit(EXIT_SUCCESS);
 			default:

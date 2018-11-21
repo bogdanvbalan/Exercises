@@ -13,7 +13,7 @@
 
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 
-char files [10][10] = {"nf", "q", "q", "p.jpg", "binary.dat", "x.txt", "a", "aabi.txt", "big.txt", "abc"}; // files that will be requested randomly by the client
+char files [10][10] = {"nf", "q", "q", "p.jpg", "binary", "x.txt", "a", "aabi.txt", "big.txt", "abc"}; // files that will be requested randomly by the client
 
 int main(int argc, char* argv[]) {
 	int i, counter, rf; // used to loop through the number of arguments
@@ -59,7 +59,6 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-    
     /* Get the configuration from client.cfg*/
 	config = fopen("client.cfg", "r");
 	counter = 0;
@@ -108,13 +107,16 @@ int main(int argc, char* argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
+	/* Send the name received as argument*/
+	if (send(client_sock, file_name, sizeof(file_name), 0) == -1) {
+		perror("Client send");
+		exit(EXIT_FAILURE);
+	}
+
 	while (1) {   // client loops until 'q' key is received, the loop exits using a call to exit()
 
-		/* Send the name of the file to server and receive the availability of the file*/
-		if (send(client_sock, file_name, sizeof(file_name), 0) == -1) {
-			perror("Client send");
-			exit(EXIT_FAILURE);
-		}
+		/* Get the availability of the file*/
+		memset(file_on_server, 0, MESSAGE_LENGTH);
 		if (read(client_sock, &file_on_server, sizeof(file_on_server)) == -1) {
 			perror("Client receive file found");
 		    exit(EXIT_FAILURE);
@@ -160,7 +162,6 @@ int main(int argc, char* argv[]) {
 						
 						fwrite(file_buffer, sizeof(char), bytes_recv, file_write);
 						bytes_left -= bytes_recv;
-						printf("%d\n",bytes_left);
 					}
 					fclose(file_write);
 					printf("Got file %s from server.\n",file_name);
@@ -179,18 +180,24 @@ int main(int argc, char* argv[]) {
 			printf("%s\n",file_on_server);
 		}
 
-		/* Check if the client requests another file*/
+		/* Get the name of the next file*/
 		srand(time(NULL) * getpid() * random_index);
 		random_index = rand() % 9;
 		memset(file_name, 0, MESSAGE_LENGTH);
 		strcpy(file_name, files[random_index]);
+		printf("Sending request for %s \n", file_name);
+
+		/* Send the name of the new file to the server*/
+		if (send(client_sock, file_name, sizeof(file_name), 0) == -1) {
+			perror("Client send");
+			exit(EXIT_FAILURE);
+		}
 
 		if (strcmp(file_name,"q") == 0) {
 			send(client_sock, file_name, sizeof(file_name), 0);
+			shutdown(client_sock, SHUT_RDWR);
+			close(client_sock);
 			exit(EXIT_SUCCESS);
 		}
 	}
-	close(client_sock);
-
-	return 0;
 }
