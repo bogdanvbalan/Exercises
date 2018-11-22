@@ -9,13 +9,14 @@
 #include <pthread.h>
 #include <sys/stat.h>
 #include "common.h"
+#include <semaphore.h>
+#include <sys/stat.h>
 
 static int seats = MAX_NO_OF_SEATS; 
 
 pthread_mutex_t mutex;    // mutex used to protect the number of seats
-pthread_mutex_t pmutex;   // mutex used to protect the name of the client 
 
-int srv_name = 10;
+int srv_nane = 10;
 
 /* Handle a request from a client*/
 void *handleRequests(void *data) {
@@ -26,7 +27,7 @@ void *handleRequests(void *data) {
 	int seats_requested;
 	size_t size_of_message = sizeof(message);
 	mqd_t client_desc, server_desc;
-    
+        
     /* Create a queue which will be used to communicate with the client*/
     attr.mq_flags = 0;
     attr.mq_maxmsg = MAX_MESSAGES;
@@ -42,7 +43,6 @@ void *handleRequests(void *data) {
 
 	/* Copy the name of the client*/
 	strcpy(client_name, (char *)data);
-	pthread_mutex_unlock(&pmutex);
 
 	/* Open the client queue*/
     if ((client_desc = mq_open(client_name, O_RDWR)) == -1) {
@@ -116,9 +116,8 @@ int main () {
     attr.mq_msgsize = size_of_message;
     attr.mq_curmsgs = 0;
 
-    /* Initialization of the two mutexes*/
+    /* Initialization of the mutexe*/
     pthread_mutex_init(&mutex, NULL);
-    pthread_mutex_init(&pmutex, NULL);
 
     /* Create a message queue on which the client will send the name of its own queue*/
     if ((server_desc = mq_open(SERVER_NAME, O_RDONLY | O_CREAT, QUEUE_PERMISSIONS, &attr)) == -1) {
@@ -127,8 +126,8 @@ int main () {
     }
 
     while (1) {
+
 	    /* Get the name of the client*/
-	    pthread_mutex_lock(&pmutex);
 	    memset(client_name, 0, size_of_message);
 	    if((mq_receive(server_desc, client_name, size_of_message, NULL)) == -1) {
 	        perror("Server receive client name");
@@ -137,8 +136,10 @@ int main () {
     	printf("Received the following message: %s\n",client_name);
 
     	pthread_t tid;
+        char name[MESSAGE_LENGTH];
+        strcpy(name, client_name);
 
-    	if((pthread_create(&tid, NULL, handleRequests,(void *) client_name)) != 0) {
+    	if((pthread_create(&tid, NULL, handleRequests,(void *) name)) != 0) {
     		perror("Server create thread");
     	}
 		if((pthread_detach(tid)) != 0) {
