@@ -173,6 +173,11 @@ int main() {
 	FILE *log;
 	sem_t *config_sem;  // semaphore used to protect the config file
 
+	/* Delete the existent log file*/
+	if (remove("server.log") == -1) {
+		perror("Remove of log file");
+	}
+
 	/* Get the configuration from client.cfg*/
 	config = fopen("server.cfg", "r");
 	counter = 0;
