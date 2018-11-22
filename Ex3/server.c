@@ -16,7 +16,7 @@
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 
 /* Function used to handle the requests*/
-void handleRequest(int socket_des, char source_dir[1024]) {
+void handleRequest(int socket_des, char source_dir[1024], char sem_name[MESSAGE_LENGTH]) {
 	int i, log_index;
 	int read_file;
 	int file_size;
@@ -31,18 +31,28 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 	struct stat file_stats; //the stats of the file requested by client
 	char logs [12][MESSAGE_LENGTH];
 	FILE *log;
+	sem_t *chld_sem;
 
 	if ((log = fopen( "server.log" , "a" )) == NULL) {
 		perror("Open server log");
 		exit(EXIT_FAILURE);
 	}
 
+	/* Open the semaphore*/
+	if ((chld_sem = sem_open(sem_name, O_RDWR)) == SEM_FAILED) { // avoid opening a semaphore that exists
+		perror("Child open semaphore");
+		exit(EXIT_FAILURE);
+	}
+
 	while (1) {
 		
 		/*Log the activity for current client*/
+		sem_wait(chld_sem);
 		for (i = 0; i < log_index; i++) {
 			fprintf(log,"%s \n",logs[i]);
-		}	
+		}
+		sem_post(chld_sem);
+
 		/* Reset the log array*/
 		for (i = 0; i < log_index; i++) {
 			memset(logs[i], 0, MESSAGE_LENGTH);
@@ -147,6 +157,7 @@ void handleRequest(int socket_des, char source_dir[1024]) {
 		file_offset = 0;
 		sprintf(logs[log_index++],"=====================================================\n");
 	}
+	sem_close(chld_sem);
 	fclose(log);
 	shutdown(socket_des, SHUT_RDWR);
 	close(socket_des);
@@ -219,6 +230,7 @@ int main() {
 	/* Create the semaphore */
 	memset(temp, 0, MESSAGE_LENGTH);
 	sprintf(temp, "/%d", getpid()); //set the name based on pid
+	sem_unlink(temp);
 	if ((config_sem = sem_open(temp, O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 1)) == SEM_FAILED) { // avoid opening a semaphore that exists
 		perror("Create the semaphore");
 		exit(EXIT_FAILURE);
@@ -237,7 +249,7 @@ int main() {
 				close(new_socket);
 				break;
 			case 0:
-				handleRequest(new_socket, path); 
+				handleRequest(new_socket, path, temp); 
 				close(server_fd);
 				exit(EXIT_SUCCESS);
 			default:
