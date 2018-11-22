@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/sendfile.h>
+#include <semaphore.h>
+#include <sys/stat.h>
 
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 
@@ -159,6 +161,8 @@ int main() {
 	size_t address_len = sizeof(address);
 	FILE *config;
 	FILE *log;
+	sem_t *config_sem;  // semaphore used to protect the config file
+
 	/* Get the configuration from client.cfg*/
 	config = fopen("server.cfg", "r");
 	counter = 0;
@@ -212,6 +216,14 @@ int main() {
 		exit(EXIT_FAILURE);
 	}
 
+	/* Create the semaphore */
+	memset(temp, 0, MESSAGE_LENGTH);
+	sprintf(temp, "/%d", getpid()); //set the name based on pid
+	if ((config_sem = sem_open(temp, O_CREAT | O_EXCL, S_IRWXU | S_IRWXG, 1)) == SEM_FAILED) { // avoid opening a semaphore that exists
+		perror("Create the semaphore");
+		exit(EXIT_FAILURE);
+	}
+
 	/* Create a new process for each client connection*/
 	while (1) {
 		if ((new_socket = accept(server_fd, (struct sockaddr *) &address, (socklen_t*) &address_len)) == - 1) {    //accept the connection to the client
@@ -225,8 +237,8 @@ int main() {
 				close(new_socket);
 				break;
 			case 0:
-				close(server_fd);
 				handleRequest(new_socket, path); 
+				close(server_fd);
 				exit(EXIT_SUCCESS);
 			default:
 				close(new_socket);
