@@ -157,7 +157,6 @@ void handleRequest(int socket_des, char source_dir[1024], char sem_name[MESSAGE_
 		file_offset = 0;
 		sprintf(logs[log_index++],"=====================================================\n");
 	}
-	sem_close(chld_sem);
 	fclose(log);
 	shutdown(socket_des, SHUT_RDWR);
 	close(socket_des);

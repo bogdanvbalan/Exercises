@@ -13,7 +13,7 @@
 
 #define MESSAGE_LENGTH 256 //the maximum length of the messages exchanged by server and client
 
-char files [10][10] = {"nf", "q", "q", "p.jpg", "binary", "x.txt", "a", "aabi.txt", "big.txt", "abc"}; // files that will be requested randomly by the client
+char files [10][10] = {"nf", "q", "q", "p.jpg", "binary", "x.txt", "ab", "aabi.txt", "big.txt", "abc"}; // files that will be requested randomly by the client
 
 int main(int argc, char* argv[]) {
 	int i, counter, rf; // used to loop through the number of arguments
